@@ -2,8 +2,8 @@
  * FieldCP's are used to refer to a field in a particular
  * class.
  *
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 package jas;

@@ -2,8 +2,8 @@
  * This is used to encapsulate a CodeAttr so it can be added
  * into a class.
  * @see ClassEnv#addMethod
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 package jas;
 

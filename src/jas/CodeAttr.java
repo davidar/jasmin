@@ -2,8 +2,8 @@
  * CodeAttr's are used as a bag to hold lists of instructions
  * until it is time to put them into a Class.
  * @see ClassEnv#addMethod
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 package jas;

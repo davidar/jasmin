@@ -1,8 +1,8 @@
 /**
  * This is used to create a Class constant pool item
  *
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 package jas;

@@ -3,8 +3,8 @@
  * the set of exceptions (as classCP items) that can be thrown
  * by the method.
  *
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 package jas;

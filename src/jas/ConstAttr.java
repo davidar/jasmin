@@ -2,8 +2,8 @@
  * This is typically used to represent a constant value for
  * a field entry (as in static final int foo = 20).
  *
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 package jas;

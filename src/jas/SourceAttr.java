@@ -1,8 +1,8 @@
 /**
  * This attribute is used to embed Source file information into
  * a class file.
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 package jas;

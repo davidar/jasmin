@@ -14,8 +14,8 @@
  * @see DoubleCP
  * @see StringCP
  *
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 

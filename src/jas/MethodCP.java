@@ -1,8 +1,8 @@
 /**
  * MethodCP's are used to make references to methods in classes
  *
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 package jas;

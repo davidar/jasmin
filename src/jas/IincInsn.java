@@ -2,8 +2,8 @@
  * Some instructions are perniticky enough that its simpler
  * to write them separately instead of smushing them with
  * all the rest. the iinc instruction is one of them.
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 package jas;

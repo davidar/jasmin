@@ -1,8 +1,8 @@
 /**
  * An InterfaceCP is used to refer to an interface specification
  *
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 package jas;

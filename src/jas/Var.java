@@ -4,8 +4,8 @@
  * which the java compiler uses to represent things like
  * static final int blah = foo;
  *
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 package jas;

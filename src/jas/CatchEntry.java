@@ -2,8 +2,8 @@
  * This class
  * is used to build up entries in a catch table.
  * @see Catchtable
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 package jas;

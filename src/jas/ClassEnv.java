@@ -12,8 +12,8 @@ import java.util.Vector;
  * This is the place where all information about the class to
  * be created resides.
  *
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 public class ClassEnv implements RuntimeConstants

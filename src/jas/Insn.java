@@ -3,8 +3,8 @@
  * CodeAttr to build up the code for a method.
  * @see CodeAttr
  * @see RuntimeConstants
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 

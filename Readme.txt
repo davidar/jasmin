@@ -34,21 +34,28 @@ Requirements
 ------------
 Jasmin is written in Java, and should work with most Java 1.1 environments. 
 
-To run Jasmin you need to install the Java 2 Runtime Environment (1.4), 
-which can be downloaded from "http://www.javasoft.com/j2se/".
+To run Jasmin you need to have a Java 2 Runtime Environment available (e.g. JDK 1.4). 
+This can be downloaded from "http://www.javasoft.com/j2se/".
 
 Getting Started
 ---------------
 The Jasmin distribution contains a jasmin.jar file holding the Jasmin assembler. 
 To run Jasmin, execute the Jarfile, specifying any files to assemble 
-as command-line parameters, e.g.
+as command-line parameters, e.g. to assemble the "HelloWorld.j" file in examples,
+first use cd to change into the Jasmin directory:
 
-	java -jar jasmin.jar examples\HelloWorld.j      (Windows)
+    cd c:\jasmin-1.1                                   [Windows]
 or
-	java -jar jasmin.jar examples/HelloWorld.j		(Unix/MacOsX)
+    cd ~/jasmin-1.1                                    [Unix]
+
+Then, to run Jasmin, use:
+
+    java -jar jasmin.jar examples\HelloWorld.j         [Windows]
+or
+    java -jar jasmin.jar examples/HelloWorld.j         [Unix/MacOsX]
 	
 
-After running Jasmin, it should generate the compiled HelloWorld.class file
+After running Jasmin as above, it generates a compiled HelloWorld.class file
 in the examples directory.
 
 You can then run the HelloWorld program by doing:
@@ -62,21 +69,18 @@ to build Jasmin. In brief, you need to:
 
 1. Start a Terminal or Command window. 
 2. Change (cd) into the Jasmin directory
-3. Set the environment variable JAVA_HOME to point to your Java directory.
+3. Make sure that java, javac etc. are on your path
 4. Run build.bat (Windows) or build.sh (Unix).
 
 For example, on Windows, this might look something like:
 
-    cd desktop\jasmin                 # change to Jasmin directory
-    set JAVA_HOME=c:\j2sdk1.4.1       # insert correct path here
-    build.bat		
-	
+    cd c:\jasmin-1.1                 # change to Jasmin directory
+    build all
+			
 Or, for Unix, it might be like:
 
-    cd ~/jasmin                       # change to Jasmin directory
-    JAVA_HOME=/usr/java               # insert correct path here
-    export JAVA_HOME
-    ./build.sh
+    cd ~/jasmin-1.1                  # change to Jasmin directory
+    ./build.sh all
 
 These scripts use the build.xml configuration file to specify build parameters.
 
@@ -92,13 +96,12 @@ Files
 -----
 The following files are included in this distribution:
 
-    README      - this file
+    README.txt  - this file
     jasmin.jar  - executable Jar file containing Jasmin assembler
     examples/   - directory containing example files written for Jasmin
     src/        - the Java source code and for the jasmin package
-    build/      - contains the build files for Jasmin
     lib/        - Contains Java sources for the java_cup and jas packages
-    doc/        - various documentation files.
+    docs/       - various documentation files.
 
 Copyright
 ---------

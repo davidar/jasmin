@@ -6,8 +6,8 @@ import java.io.*;
 /**
  * Wrap an Double constant reference with this CPE.
  *
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 public class DoubleCP extends CP implements RuntimeConstants

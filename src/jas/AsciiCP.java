@@ -1,8 +1,8 @@
 /**
  * This is a class to create Ascii CP entries.
  *
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 package jas;

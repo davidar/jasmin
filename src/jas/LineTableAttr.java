@@ -2,8 +2,8 @@
  * Line number table attributes are embedded into Code attributes
  * and used for further debugging information.
  * @see CodeAttr#setLineTable
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 package jas;

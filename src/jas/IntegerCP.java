@@ -6,8 +6,8 @@ import java.io.*;
 /**
  * Wrap an integer constant reference with this CPE.
  *
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 public class IntegerCP extends CP implements RuntimeConstants

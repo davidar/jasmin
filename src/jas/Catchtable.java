@@ -1,7 +1,7 @@
 /**
  * This is used to make a table of catch handlers for a method.
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 package jas;
 

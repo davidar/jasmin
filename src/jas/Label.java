@@ -4,8 +4,8 @@
  * actually cause any code to be written, and second, are
  * identified globally through a String label that is associated
  * with them when they are created.
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 package jas;

@@ -3,8 +3,8 @@ package jas;
 /**
  * Error thrown on problems encountered while running the
  * basic jas assembler itself.
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 public class jasError extends Exception

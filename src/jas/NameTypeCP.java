@@ -1,8 +1,8 @@
 /**
  * Create a name/type entry constant pool entry
  * 
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 
 package jas;

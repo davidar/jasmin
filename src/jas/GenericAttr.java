@@ -4,8 +4,8 @@
  * used (for instance) to embed versioning or signatures into the
  * class file or method.
  *
- * @author $Author$
- * @version $Revision$
+ * @author $Author: jonmeyerny $
+ * @version $Revision: 1.1 $
  */
 package jas;
 

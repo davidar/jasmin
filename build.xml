@@ -104,7 +104,7 @@ Then try building.
     <!-- Define the distribution directories -->
     <property name="dist.root" value="${root.dir}/dist"/>
     <property name="sourcedist.dir" value="${dist.root}/${name}-${version}/${name}-${version}"/>
-    <property name="compiledist.dir" value="${dist.root}/${name}-${version}-compiled/${name}-${version}"/>    
+    <property name="compiledist.dir" value="${dist.root}/${name}-${version}/${name}-${version}"/>    
   </target>
 
   <!-- =================================================================== -->
@@ -275,11 +275,11 @@ Then try building.
 
     <!-- Now delete what we dont want, probably a better way to do this -->
     <delete dir="${compiledist.dir}/dist"/>
-    <delete dir="${compiledist.dir}/classes"/>
+    <delete dir="${compiledist.dir}/build"/>
 
 
-    <zip zipfile="${dist.root}/${name}-${version}-compiled.zip"
-         basedir="${dist.root}/${name}-${version}-compiled"
+    <zip zipfile="${dist.root}/${name}-${version}.zip"
+         basedir="${dist.root}/${name}-${version}"
          whenempty="create"
     />
   </target>
