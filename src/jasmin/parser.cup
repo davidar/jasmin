@@ -1,0 +1,530 @@
+/* --- Copyright Jonathan Meyer 1996. All rights reserved. -----------------
+ > File:        jasmin/src/jasmin/parser.cup
+ > Purpose:     Parser for Jasmin
+ > Author:      Jonathan Meyer, 10 July 1996
+ */
+
+/*
+ * parser.cup - Java CUP file containing LALR(1) grammar for Jasmin,
+ * along with calls to ClassFile methods to output bytecode.
+ */
+
+
+package jasmin;
+
+import java_cup.runtime.*;
+import jas.*;
+import java.io.*;
+import java.util.Hashtable;
+
+/* Preliminaries to set up and use the scanner.  */
+
+action code {:
+    short access_val;
+	public ClassFile classFile;
+    public Scanner scanner;
+:};
+
+parser code {:
+
+	// parser code
+
+	public Scanner scanner;
+	public ClassFile classFile;
+	
+	public void report_error(String message, Object info)  {
+    	classFile.report_error("Warning - " + message);
+	}
+
+	public void report_fatal_error(String message, Object info)  {
+    	classFile.report_error("Error - " + message);
+    	// System.exit(-1);
+	}
+
+	parser(ClassFile classFile, Scanner scanner) {
+		super();
+
+		this.scanner = scanner;
+	    this.classFile = classFile;
+	}
+:};
+
+init with {:
+	action_obj.scanner = scanner;
+	action_obj.classFile = classFile;
+:};
+
+scan with {:
+    return scanner.next_token();
+:};
+
+
+
+/* Terminals (tokens returned by the scanner). */
+terminal token
+    // Directives (words beginning with a '.')
+    DCATCH, DCLASS, DEND, DFIELD, DLIMIT, DLINE, DMETHOD, DSET, DSUPER,
+    DSOURCE, DTHROWS, DVAR, DIMPLEMENTS, DINTERFACE,
+
+    // keywords for directives
+    TO, USING, IS, FROM, METHOD,
+
+    // access types
+    ABSTRACT, FINAL, INTERFACE, NATIVE, PRIVATE, PROTECTED, PUBLIC, STATIC,
+    SYNCHRONIZED, TRANSIENT, VOLATILE,
+
+    // complex instructions
+    LOOKUPSWITCH, TABLESWITCH, DEFAULT,
+
+    // special symbols
+    EQ, SEP, COLON
+ ;
+
+terminal str_token Str, Word, Insn;
+terminal int_token Int;
+terminal num_token Num;
+
+non terminal str_token classname;
+non terminal var_token optional_default, item;
+
+/* Non terminals */
+non terminal symbol
+       access_item, access_items, access_list, catch_expr, class_spec,
+       complex_instruction, defmethod, directive, endmethod, field_list,
+       field_spec, fields, instruction, implements, implements_list, implements_spec,
+       jas_file, label, limit_expr, lookup,
+       lookup_args, lookup_default, lookup_entry, lookup_list, method_list,
+       method_spec, methods, set_expr, simple_instruction, source_spec,
+       statement, statements, stmnt, super_spec, table, table_args, line_expr,
+       table_default, table_entry, table_list, throws_expr, var_expr
+    ;
+
+non terminal int_token access;
+
+/* The grammar */
+
+jas_file ::=
+        source_spec
+        class_spec
+        super_spec
+	implements
+        fields
+        methods
+    ;
+
+
+// ---- Source specification
+
+source_spec ::=
+    DSOURCE Word:w SEP
+        {: classFile.setSource(w.str_val); :}
+    |
+    /* nothing */
+;
+
+// ---- Class specification
+
+class_spec ::=
+    DCLASS access:a classname:name SEP
+        {:
+            classFile.setClass(name.str_val,
+                (short)(a.int_val | RuntimeConstants.ACC_SUPER));
+        :}
+    |
+    DINTERFACE access:a classname:name SEP
+        {:
+            classFile.setClass(name.str_val,
+                (short)(a.int_val |
+                        RuntimeConstants.ACC_SUPER |
+                        RuntimeConstants.ACC_INTERFACE));
+        :}
+  ;
+
+classname ::=
+    Word:w
+        {: RESULT.str_val = ScannerUtils.convertDots(w.str_val); :}
+
+  ;
+
+access ::=
+    {: access_val = 0; :}
+        access_list
+    {: RESULT.int_val = access_val; :}
+ ;
+
+
+access_list ::= access_items | ;
+access_items ::= access_items access_item | access_item ;
+
+access_item ::=
+    PUBLIC       {: access_val |= RuntimeConstants.ACC_PUBLIC; :}
+    |
+    PRIVATE      {: access_val |= RuntimeConstants.ACC_PRIVATE; :}
+    |
+    PROTECTED    {: access_val |= RuntimeConstants.ACC_PROTECTED; :}
+    |
+    STATIC       {: access_val |= RuntimeConstants.ACC_STATIC; :}
+    |
+    FINAL        {: access_val |= RuntimeConstants.ACC_FINAL; :}
+    |
+    SYNCHRONIZED {: access_val |= RuntimeConstants.ACC_SYNCHRONIZED; :}
+    |
+    VOLATILE     {: access_val |= RuntimeConstants.ACC_VOLATILE; :}
+    |
+    TRANSIENT    {: access_val |= RuntimeConstants.ACC_TRANSIENT; :}
+    |
+    NATIVE       {: access_val |= RuntimeConstants.ACC_NATIVE; :}
+    |
+    INTERFACE    {: access_val |= RuntimeConstants.ACC_INTERFACE; :}
+    |
+    ABSTRACT     {: access_val |= RuntimeConstants.ACC_ABSTRACT; :}
+  ;
+
+// ---- Superclass specification
+
+super_spec ::=
+    DSUPER classname:name SEP
+        {:
+            classFile.setSuperClass(name.str_val);
+        :}
+  ;
+
+// ---- Implements specification
+
+implements ::= implements_list | /* empty */ ;
+
+implements_list ::= implements_list implements_spec | implements_spec ;
+
+implements_spec ::= DIMPLEMENTS classname:name SEP
+	{: classFile.addInterface(name.str_val); :}
+    ;
+
+// ---- Fields
+
+fields ::= field_list | /* empty */ ;
+
+field_list ::= field_list field_spec | field_spec ;
+
+field_spec ::=
+    DFIELD access:a Word:name Word:sig optional_default:v SEP
+        {:
+            classFile.addField((short)a.int_val, name.str_val, sig.str_val,
+                            v.var_val);
+        :}
+  ;
+
+// default value for a field
+optional_default ::=
+     EQ item:v   {: RESULT.var_val = v.var_val; :}
+     |
+     /* empty */ {: RESULT.var_val = null; :}
+  ;
+
+// an item is an integer, a float/double/long, or a quoted string
+item ::=
+    Int:i {: RESULT.var_val = new Integer(i.int_val); :}
+    |
+    Num:n {: RESULT.var_val = n.num_val; :}
+    |
+    Str:s {: RESULT.var_val = s.str_val; :}
+  ;
+
+// ---- Methods
+
+methods ::= method_list | /* empty */;
+
+method_list ::= method_list method_spec | method_spec ;
+
+method_spec ::=
+    defmethod
+    statements
+    endmethod
+    |
+    defmethod endmethod
+ ;
+
+defmethod ::=
+    DMETHOD access:i Word:name SEP
+        {:
+            String split[] = ScannerUtils.splitMethodSignature(name.str_val);
+            classFile.newMethod(split[0], split[1], i.int_val);
+        :}
+  ;
+
+endmethod ::=
+    DEND METHOD SEP
+        {:
+            classFile.endMethod();
+        :}
+  ;
+
+
+// ---- Statements in a method
+
+statements ::= statements statement | statement ;
+
+statement ::=
+     {: classFile.setLine(scanner.token_line_num); :}
+     stmnt SEP
+  ;
+
+stmnt ::=
+    instruction
+    |
+    directive
+    |
+    error
+    |
+    label
+    |
+    /* empty */
+  ;
+
+// label:
+label ::=
+    Word:label COLON
+        {:
+            classFile.plantLabel(label.str_val);
+        :}
+  ;
+
+// Directives (.catch, .set, .limit, etc.)
+
+directive ::=
+    DVAR var_expr
+    |
+    DLIMIT limit_expr
+    |
+    DLINE line_expr
+    |
+    DTHROWS throws_expr
+    |
+    DCATCH catch_expr
+    |
+    DSET set_expr
+  ;
+
+
+//
+// .var <num> is <name> <sig> from StartLab to EndLab
+//
+var_expr ::=
+    Int:reg IS Word:name Word:sig FROM Word:slab TO Word:elab
+        {:
+             classFile.addVar(slab.str_val, elab.str_val, name.str_val,
+                            sig.str_val, reg.int_val);
+        :}
+    |
+    Int:reg IS Word:name Word:sig
+        {:
+             classFile.addVar(null, null, name.str_val, sig.str_val, reg.int_val);
+        :}
+;
+
+
+// .limit stack <val>
+// .limit locals <val>
+
+limit_expr ::=
+    Word:w Int:v
+      {:
+        // .limit locals
+        if (w.str_val.equals("locals")
+                 || w.str_val.equals("vars")) // "vars" for historic reasons
+            classFile.setVarSize((short)v.int_val);
+        // .limit stack
+        else if (w.str_val.equals("stack"))
+            classFile.setStackSize((short)v.int_val);
+        else
+            classFile.report_error(".limit expected \"stack\" or \"locals\", but got "
+                          + w.str_val);
+      :}
+;
+
+// .line <num>
+line_expr ::=
+    Int:v
+       {: classFile.addLine(v.int_val); :}
+;
+
+// .throws <class>
+throws_expr ::=
+    classname:s
+        {:
+            classFile.addThrow(s.str_val);
+        :}
+  ;
+
+// .catch <class> from <label1> to <label2> using <branchlab>
+catch_expr ::=
+    classname:aclass FROM Word:fromlab TO Word:tolab USING Word:branchlab
+        {:
+            classFile.addCatch(aclass.str_val,
+                            fromlab.str_val, tolab.str_val,
+                            branchlab.str_val);
+        :}
+  ;
+
+// .set <var> = <val>
+set_expr ::=
+    Word:name Int:v     {: scanner.dict.put(name.str_val, v); :}
+    |
+    Word:name Word:v    {: scanner.dict.put(name.str_val, v); :}
+    |
+    Word:name Num:v  {: scanner.dict.put(name.str_val, v); :}
+    |
+    Word:name Str:v  {: scanner.dict.put(name.str_val, v); :}
+;
+
+instruction ::=
+    simple_instruction
+    |
+    complex_instruction
+ ;
+
+// Various patterns of instruction:
+//      instruction [<pattern>]
+simple_instruction ::=
+    Insn:i
+        {:
+            classFile.plant(i.str_val);
+        :}
+    |
+    Insn:i Int:n1 Int:n2
+        {:
+            classFile.plant(i.str_val, n1.int_val, n2.int_val);
+        :}
+    |
+    Insn:i Int:n
+        {:
+            classFile.plant(i.str_val, n.int_val);
+        :}
+    |
+    Insn:i Num:n
+        {:
+            classFile.plant(i.str_val, n.num_val);
+        :}
+    |
+    Insn:i Word:n
+        {:
+            classFile.plant(i.str_val, n.str_val);
+        :}
+    |
+    Insn:i Word:n Int:n2
+        {:
+            classFile.plant(i.str_val, n.str_val, n2.int_val);
+        :}
+    |
+    Insn:i Word:n1 Word:n2
+        {:
+            classFile.plant(i.str_val, n1.str_val, n2.str_val);
+        :}
+    |
+    Insn:i Str:n
+        {:
+            classFile.plantString(i.str_val, n.str_val);
+        :}
+  ;
+
+// complex (i.e. multiline) instructions
+//      lookupswitch <lookup>
+//      tableswitch  <table>
+
+complex_instruction ::=
+    LOOKUPSWITCH lookup
+    |
+    TABLESWITCH table
+ ;
+
+// lookupswitch
+//     <value> : <label>
+//     <value> : <label>
+//     ...
+//     default : <label>
+
+lookup ::=
+    lookup_args
+    lookup_list
+    lookup_default
+  ;
+
+lookup_args ::=
+    SEP         /* no arguments to lookupswitch */
+        {: classFile.newLookupswitch(); :}
+  ;
+
+lookup_list ::=
+    lookup_list lookup_entry | lookup_entry
+ ;
+
+lookup_entry ::=
+    Int:i COLON Word:w SEP
+        {:
+            classFile.addLookupswitch(i.int_val, w.str_val);
+        :}
+  ;
+
+lookup_default ::=
+    DEFAULT COLON Word:w
+        {: classFile.endLookupswitch(w.str_val); :}
+  ;
+
+
+// tableswitch <low> [<high>]
+//     <label>
+//     <label>
+//     ...
+//     default : <label>
+
+table ::=
+    table_args
+    table_list
+    table_default
+  ;
+
+table_args ::=
+    Int:low SEP     /* one argument : the <low> parameter */
+        {:
+            classFile.newTableswitch(low.int_val);
+        :}
+    |
+    Int:low Int:high SEP     /* two arguments : <low> and <high> parameters */
+        {:
+            classFile.newTableswitch(low.int_val, high.int_val);
+        :}
+  ;
+
+table_list ::=
+    table_list table_entry | table_entry
+  ;
+
+table_entry ::=
+    Word:w SEP
+        {:
+            classFile.addTableswitch(w.str_val);
+        :}
+  ;
+
+table_default ::=
+    DEFAULT COLON Word:w
+        {:
+            classFile.endTableswitch(w.str_val);
+        :}
+  ;
+
+
+/* --- Revision History ---------------------------------------------------
+--- Jonathan Meyer, Mar 1 1997
+    Added ACC_SUPER flag - needed by 1.1.
+
+--- Jonathan Meyer, Oct 1 1996
+    Added support for .interface and .implements.
+
+--- Jonathan Meyer, July 25 1996
+    Slightly modified syntax of .var directive.
+
+    Added call to setLine to fix problem with line numbering.
+
+    Added definitions for report_error and report_fatal_error, and
+    also added 'error' token to statements list.
+*/
