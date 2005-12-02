@@ -22,6 +22,7 @@ public class CodeAttr
   Catchtable ctb;
   LineTableAttr ltab;
   LocalVarTableAttr lvar;
+  StackMapAttr stackmap;
   Vector generic;
 
   /**
@@ -59,6 +60,14 @@ public class CodeAttr
 
   public void setLocalVarTable(LocalVarTableAttr lvar)
   { this.lvar = lvar; }
+
+
+  /**
+   * Set the StackMap attribute for this method
+   */
+  public void setStackMap(StackMapAttr s) {
+    stackmap = s;
+  }
 
   /**
    * Add a generic attribute to the method. A generic attribute
@@ -98,6 +107,7 @@ public class CodeAttr
     if (ctb != null)  ctb.resolve(e);
     if (ltab != null) ltab.resolve(e);
     if (lvar != null) lvar.resolve(e);
+    if (stackmap != null) stackmap.resolve(e);
     for (Enumeration gen = generic.elements(); gen.hasMoreElements();)
       {
 	GenericAttr gattr = (GenericAttr)gen.nextElement();
@@ -146,6 +156,7 @@ public class CodeAttr
     if (ctb != null) total_size += ctb.size();
     if (ltab != null) total_size += ltab.size();
     if (lvar != null) total_size += lvar.size();
+    if (stackmap != null) total_size += stackmap.size(e);
     for (Enumeration gen = generic.elements(); gen.hasMoreElements();)
       {
 	GenericAttr gattr = (GenericAttr)(gen.nextElement());
@@ -173,12 +184,15 @@ public class CodeAttr
     short extra = 0;
     if (ltab != null) extra++;
     if (lvar != null) extra++;
+    if (stackmap != null) extra++;
     extra += generic.size();
     out.writeShort(extra);
     if (ltab != null)
       { ltab.write(e, this, out); }
     if (lvar != null)
       { lvar.write(e, this, out); }
+    if (stackmap != null)
+      { stackmap.write(e, this, out); }
     for (Enumeration gen = generic.elements(); gen.hasMoreElements();)
       {
 	GenericAttr gattr = (GenericAttr)gen.nextElement();

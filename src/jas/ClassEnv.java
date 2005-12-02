@@ -27,6 +27,9 @@ public class ClassEnv implements RuntimeConstants
   Vector vars;
   Vector methods;
   SourceAttr source;
+  SignatureAttr signature;
+  SourceDebugExtensionAttr debug;
+  EnclosingMethodAttr enclosing;
   Vector generic;
 
   public ClassEnv()
@@ -165,12 +168,24 @@ public class ClassEnv implements RuntimeConstants
                                 // additional attributes
     short numExtra = 0;
     if (source != null)
-      { numExtra = 1; }
+      { numExtra++; }
+    if (debug != null)
+      { numExtra++; }
+    if (enclosing != null)
+      { numExtra++; }
+    if (signature != null)
+      { numExtra++; }
     numExtra += generic.size();
 
     out.writeShort(numExtra);
     if (source != null)
       { source.write(this, out); }
+    if (debug != null)
+      { debug.write(this, out); }
+    if (enclosing != null)
+      { enclosing.write(this, out); }
+    if (signature != null)
+      { signature.write(this, out); }
     for (Enumeration gen=generic.elements(); gen.hasMoreElements(); )
       {
 	GenericAttr gattr = (GenericAttr)gen.nextElement();
@@ -208,18 +223,37 @@ public class ClassEnv implements RuntimeConstants
    * @param acc method_access permissions, expressed with some combination
    *       of the values defined in RuntimeConstants
    * @param name Name of the method
-   * @param sig Signature for the method
+   * @param desc Descriptor for the method
    * @param code Actual code for the method
    * @param ex Any exception attribute to be associated with method
    */
   public void
-  addMethod(short acc, String name, String sig, CodeAttr code, ExceptAttr ex)
+  addMethod(short acc, String name, String desc, CodeAttr code, ExceptAttr ex)
   {
-    Method x = new Method(acc, new AsciiCP(name), new AsciiCP(sig),
-                          code, ex);
+    addMethod(acc, name, desc, null, code, ex);
+  }
+
+
+  /**
+   * Here is where code gets added to a class.
+   * @param acc method_access permissions, expressed with some combination
+   *       of the values defined in RuntimeConstants
+   * @param name Name of the method
+   * @param desc Descriptor for the method
+   * @param sig  Signature for the method
+   * @param code Actual code for the method
+   * @param ex Any exception attribute to be associated with method
+   */
+  public void
+  addMethod(short acc, String name, String desc, SignatureAttr sig, 
+            CodeAttr code, ExceptAttr ex)
+  {
+    Method x = new Method(acc, new AsciiCP(name), new AsciiCP(desc),
+                          sig, code, ex);
     x.resolve(this);
     methods.addElement(x);
   }
+
 
   /**
    * Add an attribute specifying the name of the source file
@@ -237,6 +271,34 @@ public class ClassEnv implements RuntimeConstants
    */
   public void setSource(String source)
   { this.source = new SourceAttr(source); this.source.resolve(this); }
+
+  /**
+   * Add an attribute specifying extended debug information
+   * @param debug String the extended debug information
+   */
+  public void setSourceDebugExtension(String debug)
+  { this.debug = new SourceDebugExtensionAttr(debug); this.debug.resolve(this); }
+
+
+  /**
+   * Add an attribute specifying the enclosing method of this class
+   * @param cls String the enclosing class
+   * @param mtd String the enclosing method
+   * @param dsc String the enclosing method descriptor
+   */
+  public void setEnclosingMethod(String cls, String mtd, String dsc)
+  { this.enclosing = new EnclosingMethodAttr(cls, mtd, dsc);
+    this.enclosing.resolve(this); }
+
+
+  /**
+   * Add an attribute specifying the signature of this class
+   * @param sig String the signature
+   */
+  public void setSignature(String sig)
+  { this.signature = new SignatureAttr(sig);
+    this.signature.resolve(this); }
+
 
   /**
    * Add a generic attribute to the class file. A generic attribute
@@ -267,5 +329,17 @@ public class ClassEnv implements RuntimeConstants
     if (idx == null)
       throw new jasError("Item " + cp + " not in the class");
     return ((short)(idx.intValue()));
+  }
+
+  /**
+   * Change the bytecode version of this class
+   * The version will be version_high.version_low
+   * @param version_high short
+   * @param version_low short
+   */
+  public void setVersion(short version_high, short version_low)
+  { 
+    version_hi = version_high;
+    version_lo = version_low;
   }
 }

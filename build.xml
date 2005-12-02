@@ -77,8 +77,8 @@ Then try building.
     <tstamp/>
     <property name="Name" value="Jasmin"/>
     <property name="name" value="jasmin"/>
-    <property name="version" value="1.1"/>
-    <property name="year" value="2004"/>
+    <property name="version" value="2.0"/>
+    <property name="year" value="2005"/>
 
     <echo message="----------- ${Name} ${version} [${year}] ------------"/>
 
@@ -161,7 +161,7 @@ Then try building.
   <!-- =================================================================== -->
   <target name="compile-jasmin" depends="prepare-jasmin">
     <javac srcdir="${build.jasmin.src}"
-           source="1.4"
+           source="1.5"
            destdir="${build.jasmin.dest}"
            debug="${debug}"
            deprecation="${deprecation}"
@@ -186,7 +186,7 @@ Then try building.
   <target name="compile-java_cup" depends="prepare-jasmin">
     <mkdir dir="${build.jasmin.dest}/java_cup"/>
     <javac srcdir="${build.jasmin.src}/java_cup"
-           source="1.4"
+           source="1.5"
            destdir="${build.jasmin.dest}/java_cup"
            debug="${debug}"
            deprecation="${deprecation}"
@@ -226,11 +226,11 @@ Then try building.
   <target name="docs">
     <mkdir dir="${apidocs.dir}"/>
     <javadoc packagenames="${packages}"
-             link="http://java.sun.com/j2se/1.4/docs/api"
+             link="http://java.sun.com/j2se/1.5/docs/api"
              sourcepath="${src.dir}"
              destdir="${apidocs.dir}"
              author="true"
-             additionalparam="-source 1.4"
+             additionalparam="-source 1.5"
              version="true"
              use="true"
              splitindex="true"

@@ -36,6 +36,10 @@ public class Catchtable
   addEntry(Label start, Label end, Label handler, CP cat)
   { addEntry(new CatchEntry(start, end, handler, cat)); }
 
+  public void
+  addEntry(int start, int end, int handler, CP cat)
+  { addEntry(new CatchEntry(start, end, handler, cat)); }
+
   void resolve(ClassEnv e)
   {
     for (Enumeration en=entries.elements(); en.hasMoreElements(); )

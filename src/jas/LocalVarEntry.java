@@ -12,7 +12,7 @@ public class LocalVarEntry
 {
   Label start, end;
   CP name, sig;
-  int slot;
+  int slot, starto, endo;
 
   /**
    * Create local variable scope information that can be used
@@ -29,6 +29,26 @@ public class LocalVarEntry
   {
     start = startLabel;
     end = endLabel;
+    this.name = new AsciiCP(name);
+    this.sig = new AsciiCP(sig);
+    this.slot = slot;
+  }
+
+  /**
+   * Create local variable scope information that can be used
+   * while debugging.
+   * @param startOffset beginning of scope for variable
+   * @param endOffset   end of scope for variable
+   * @param name        name of variable
+   * @param sig         signature for variable
+   * @param slot        index of the local variable in the local variables
+   *                    registers of the VM where its value can be found
+   */
+  public LocalVarEntry
+  (int startOffset, int endOffset, String name, String sig, int slot)
+  {
+    starto = startOffset;
+    endo = endOffset;
     this.name = new AsciiCP(name);
     this.sig = new AsciiCP(sig);
     this.slot = slot;
@@ -60,9 +80,14 @@ public class LocalVarEntry
   void write(ClassEnv e, CodeAttr ce, DataOutputStream out)
     throws IOException, jasError
   {
-    start.writeOffset(ce, null, out);
-    end.writeOffset(ce, start, out); // This is the *length*,
+    if(start!=null && end!=null) {
+        start.writeOffset(ce, null, out);
+        end.writeOffset(ce, start, out); // This is the *length*,
 				// not another offset
+    } else {
+        out.writeShort(starto);
+        out.writeShort(endo - starto);
+    }
 
     out.writeShort(e.getCPIndex(name));
     out.writeShort(e.getCPIndex(sig));

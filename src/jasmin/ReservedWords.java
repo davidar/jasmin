@@ -27,6 +27,7 @@ abstract class ReservedWords {
         reserved_words = new Hashtable();
 
         // Jasmin directives
+        reserved_words.put(".bytecode", new token(sym.DBYTECODE));
         reserved_words.put(".catch", new token(sym.DCATCH));
         reserved_words.put(".class", new token(sym.DCLASS));
         reserved_words.put(".end", new token(sym.DEND));
@@ -41,6 +42,10 @@ abstract class ReservedWords {
         reserved_words.put(".super", new token(sym.DSUPER));
         reserved_words.put(".throws", new token(sym.DTHROWS));
         reserved_words.put(".var", new token(sym.DVAR));
+        reserved_words.put(".debug", new token(sym.DDEBUG));
+        reserved_words.put(".enclosing", new token(sym.DENCLOSING));
+        reserved_words.put(".signature", new token(sym.DSIGNATURE));
+        reserved_words.put(".stack", new token(sym.DSTACK));
 
         // reserved_words used in Jasmin directives
         reserved_words.put("from", new token(sym.FROM));
@@ -48,6 +53,10 @@ abstract class ReservedWords {
         reserved_words.put("to", new token(sym.TO));
         reserved_words.put("is", new token(sym.IS));
         reserved_words.put("using", new token(sym.USING));
+        reserved_words.put("signature", new token(sym.SIGNATURE));
+        reserved_words.put("stack", new token(sym.STACK));
+        reserved_words.put("offset", new token(sym.OFFSET));
+        reserved_words.put("locals", new token(sym.LOCALS));
 
         // Special-case instructions
         reserved_words.put("tableswitch", new token(sym.TABLESWITCH));
@@ -66,5 +75,10 @@ abstract class ReservedWords {
         reserved_words.put("native", new token(sym.NATIVE));
         reserved_words.put("interface", new token(sym.INTERFACE));
         reserved_words.put("abstract", new token(sym.ABSTRACT));
+
+        reserved_words.put("annotation", new token(sym.ANNOTATION));
+        reserved_words.put("enum", new token(sym.ENUM));
+        reserved_words.put("bridge", new token(sym.BRIDGE));
+        reserved_words.put("varargs", new token(sym.VARARGS));
     }
 }

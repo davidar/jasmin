@@ -20,7 +20,7 @@ public class TableswitchInsn extends Insn implements RuntimeConstants
    * @param j array of Labels, one for each possible index.
    */
 
-  public TableswitchInsn(int min, int max, Label def, Label j[])
+  public TableswitchInsn(int min, int max, LabelOrOffset def, LabelOrOffset j[])
   {
     opc = opc_tableswitch;
     operand = new TableswitchOperand(this, min, max, def, j);

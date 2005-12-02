@@ -1,0 +1,296 @@
+<html>
+<head>
+<title>Jasmin User Guide</title>
+<link href="style.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+<table>
+<tr><td width=550>
+<center>
+<p><img src=jasmin_icon.jpg></p>
+<p>
+<div class="h1">JasminXT Syntax</div>
+Daniel Reynaud, Dec 2005
+</p>
+</center>
+
+<h1>About This Document</h1>
+
+This guide describes the rules and syntax used in JasminXT, the extension of
+the Jasmin language in version 2.0. If you are new to Jasmin, you should
+refer to the Jasmin user guide. Note that this document doesn't
+explain the Java Virtual Machine itself, or give syntax notes for
+every instruction known to Jasmin. See the Java Virtual Machine specification
+for more information on the JVM.<p>
+
+
+<h1>Why a new Jasmin language ?</h1>
+
+<p>
+Jasmin is the de-facto standard Java assembly language. It is useful to explore
+the possibilities of bytecode, but it does not offer a real low level control
+over the produced output. Therefore it is not suitable to generate test cases
+for virtual machines or bytecode verifier. This new version of the Jasmin
+language, called JasminXT, provides optional directives and other syntax
+updates to have more control over the output and to stick with the latest
+changes of the Java language.</p>
+
+<p>JasminXT has been defined for the tinapoc project. The purpose of the tinapoc
+project is to create a reliable Java reverse engineering toolkit. See the tinapoc
+homepage for more information : <a href="http://tinapoc.sourceforge.net/">http://tinapoc.sourceforge.net/</a></p>
+
+<h1>Summary of the new features</h1>
+
+<p>
+<li>use of offsets for branch targets, local variable visibility and exception handlers. The offsets can either be absolute or relative :<br>
+<pre>
+goto  12  ; absolute offset : go to bytecode at offset 12
+goto +5   ; relative offset : go 12 bytes forward
+goto -8   ; relative offset : go 8 bytes backwards
+</pre>
+
+<li>the following access flags are now supported : ACC_ENUM, ACC_ANNOTATION, ACC_BRIDGE and ACC_VARARGS<br>
+
+<li>the .bytecode directive has been added, to set the bytecode version in the class file.<br>
+Example : <pre>.bytecode 49.0</pre><br>
+
+<li>it is now possible to add a SourceDebugExtension attribute to the class with the following directive :<br>
+<pre>.debug "some string here"</pre><br>
+
+<li>same thing for the EnclosingMethod attribute :<br>
+<pre>.enclosing method "some/package/Foo/someMethod(I)V"</pre><br>
+
+<li>support for the Signature attribute (in the classes, methods and fields) :<br>
+<pre>.signature "<my::own>Signature()"
+.field myField Ljava/lang/String; signature "<my::own>Signature()"</pre><br>
+
+<li>support for the StackMap attribute, using the .stack directive in a method definition<br>
+
+<li>it is now possible to give the offset of an instruction before the instruction itself, like in the following code snippet :<br>
+  <pre>
+       0: aload_0
+       1: invokespecial java/lang/Object/<init>()V
+       4: aload_0
+       5: ldc2_w 3.14159
+  </pre>
+</p>
+
+
+
+
+<h1>JasminXT File Format</h1>
+<p>
+This new version is an extension of the existing Jasmin language, therefore old
+Jasmin files should still compile correctly with newer versions of Jasmin.
+JasminXT is supported by Jasmin 2.0 or higher.</p>
+
+<p>
+In the rest of this document, words between '[' and ']' are optional. The
+syntax of a JasminXT file is the following :</p>
+
+<pre>
+&lt;jas_file&gt; {
+    &lt;jasmin_header&gt;
+    [&lt;fields&gt;]
+    [&lt;methods&gt;]
+}
+</pre>
+
+<h1>JasminXT Header</h1>
+<pre>
+&lt;jasmin_header&gt; {
+    [.bytecode &lt;x.y&gt;]
+    [.source &lt;sourcefile&gt;]
+    &lt;class_spec&gt;
+    &lt;super_spec&gt;
+    &lt;implements&gt;
+    [.signature "&lt;signature&gt;"]
+    [.debug "&lt;debug_source_extension&gt;"]
+    [.enclosing method &lt;method_name&gt;]
+}
+
+example :
+.bytecode 49.0
+.source hello.j
+.class hello
+.super java/lang/Object
+.signature "&lt;my::own&gt;Signature()"
+.debug "this string will be included in the SourceDebugExtension attribute"
+.enclosing method foo/bar/Whatever/someMethod()</pre>
+
+<p>The .bytecode directive sets the version of the bytecode in the class file.</p>
+
+<p>The .signature directive, when used in the header of the Jasmin file, sets the
+Signature attribute for the class (the argument is a string between double
+quotes)</p>
+
+<p>The .debug directive sets the SourceDebugExtension attribute for the class (the
+argument is also a string between double quotes)</p>
+
+<p>The .enclosing directive sets the EnclosingMethod attribute for the class. The
+argument is a supposed to be a method name, but it can be any string between
+double quotes.</p>
+
+
+
+<h1>JasminXT Class, Super Class and Interfaces Definition</h1>
+<pre>
+&lt;class_spec&gt; {
+    .class &lt;access_spec&gt; &lt;class_name&gt;
+}
+</pre>
+
+<p>where &lt;access_spec&gt; is any number of words taken from this list : public,
+private, protected, static, final, synchronized, native, final, super,
+interface, abstract, annotation, enum, bridge/volatile, transient/varargs</p>
+
+<p>and &lt;class_name&gt; is the fully qualified internal form of the class, such as
+my/package/MyClass</p><br>
+
+
+<pre>
+&lt;super_spec&gt; {
+    .super &lt;class_name&gt;
+}
+</pre>
+
+<pre>
+&lt;implements&gt; {
+    .implements &lt;class_name&gt;
+    (...)
+}
+</pre>
+<p>
+The .super and .implements directives have not been modified in JasminXT<br>
+The .implements directive can be repeated in order to implement multiple interfaces</p><br>
+
+
+
+<h1>JasminXT Field Definition</h1>
+<pre>
+&lt;fields&gt; {
+   .field &lt;access_spec&gt; &lt;field_name&gt; &lt;descriptor&gt; [signature &lt;signature&gt;] 
+           [ = &lt;value&gt; ]
+   (...)
+}
+</pre>
+<p>
+The only addition is the optional signature attribute. If present, the
+Signature attribute will be set in the class file for this field with the given
+quoted string as an argument.</p>
+
+<p>example :
+<pre>.field enum myField Ljava/lang/String; signature "&lt;my::own&gt;Signature()" = "val"</pre></p>
+
+
+
+<h1>JasminXT Method Definition</h1>
+The general format of a method definition has not changed in JasminXT.
+<pre>
+&lt;methods&gt; {
+    &lt;method&gt;
+    (...)
+}
+</pre>
+
+<pre>
+&lt;method&gt; {
+    .method &lt;access_spec&gt; &lt;method_name&gt; &lt;descriptor&gt;
+        &lt;statement&gt;
+        (...)
+    .end method
+}
+</pre>
+
+
+<h1>JasminXT Method Statements</h1>
+<pre>
+&lt;statement&gt; {
+   .limit stack &lt;integer&gt;
+   | .limit locals &lt;integer&gt;
+   | .line &lt;integer&gt;
+   | .var &lt;var_number&gt; is &lt;var_name&gt; &lt;descriptor&gt; from &lt;label1&gt; to &lt;label2&gt;
+   | .var &lt;var_number&gt; is &lt;var_name&gt; &lt;descriptor&gt; from &lt;offset1&gt; to &lt;offset2&gt;
+   | .throws &lt;classname&gt;
+   | .catch &lt;classname&gt; from &lt;label1&gt; to &lt;label2&gt; using &lt;label3&gt;
+   | .catch &lt;classname&gt; from &lt;offset1&gt; to &lt;offset2&gt; using &lt;offset3&gt;
+   | .signature "&lt;signature&gt;"
+   | .stack
+         offset &lt;pc&gt;
+         [locals &lt;verification_type&gt; [&lt;verification_arg&gt;]]
+         (...)
+         [stack  &lt;verification_type&gt; [&lt;verification_arg&gt;]]
+         (...)
+     .end stack
+   | &lt;instruction&gt; [&lt;instruction_args&gt;]
+   | &lt;Label&gt;:
+}
+</pre>
+<p>
+In Jasmin XT you can now use offsets instead of labels for the local variable
+definitions and for the exception handlers definitions.</p>
+
+<p>The .signature sets the Signature attribute for this method with the given
+quoted string.<p>
+
+<p>You can now also define StackMap attributes using the .stack directive. &lt;pc&gt; is
+an offset in the local bytecode array. &lt;verification_type&gt; is one of the
+following keywords : Top, Integer, Float, Long, Double, Null, 
+UninitializedThis, Object or Uninitialized. Object takes a &lt;classname&gt; as a
+parameter. Uninitialized takes an integer as a parameter.</p>
+
+example :
+<pre>
+.stack
+    offset 16
+    locals Null
+    locals Top
+    locals Object allo
+    stack Uninitialized 12
+.end stack
+</pre>
+<p>
+This statement defines a single stack map frame. All the stack map frames
+defined in a method are then aggregated and form the StackMap attribute for the
+method.</p>
+
+
+
+<h1>JasminXT Instructions</h1>
+<pre>
+&lt;instruction&gt; {
+    [&lt;pc&gt;:] &lt;opcode&gt; [&lt;instruction_args&gt;]
+}
+</pre>
+
+<p>
+The main change in JasminXT is that it is now possible to put the offset of the
+instruction before the opcode (the &lt;pc&gt;: statement). The pc is processed as a
+label, therefore you can virtually put any number as the pc but it won't change
+the actual pc of the bytecode.</p>
+
+<p>
+Another update is that it is now possible to use offsets (both relative and
+absolute) as branch targets instead of labels. The offset is considered to be
+relative if it begins with a plus or a minus sign.</p>
+
+example :
+<pre>
+goto  n  ; absolute offset : go to the bytecode labelled n
+goto +n  ; relative offset : go n bytes forward (from the offset of this goto)
+goto -n  ; relative offset : go n bytes backwards
+</pre>
+
+<p>
+If something hasn't been documented here, it means that it hasn't changed, so
+you can still refer to the Jasmin <a href="guide.html">user guide</a></p>
+
+
+
+
+<hr><address>Copyright (c) Daniel Reynaud, December 2005</address>
+<hr>
+<a href="http://jasmin.sourceforge.net">Jasmin Home</a>
+</td></tr></table>
+</body>
+</html>

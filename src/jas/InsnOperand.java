@@ -277,12 +277,12 @@ class MultiarrayOperand extends InsnOperand
 
 class LookupswitchOperand extends InsnOperand
 {
-  Label dflt;
+  LabelOrOffset dflt;
   Insn source;
   int match[];
-  Label jmp[];
+  LabelOrOffset jmp[];
 
-  LookupswitchOperand(Insn s, Label def, int m[], Label j[])
+  LookupswitchOperand(Insn s, LabelOrOffset def, int m[], LabelOrOffset j[])
   { dflt = def; jmp = j;  match = m;  source = s; }
 
   void resolve (ClassEnv e) { return; }
@@ -334,11 +334,12 @@ class LookupswitchOperand extends InsnOperand
 class TableswitchOperand extends InsnOperand
 {
   int min, max;
-  Label dflt;
-  Label jmp[];
+  LabelOrOffset dflt;
+  LabelOrOffset jmp[];
   Insn source;
 
-  TableswitchOperand(Insn s,int min, int max, Label def, Label j[])
+  TableswitchOperand(Insn s,int min, int max, LabelOrOffset def,
+                     LabelOrOffset j[])
   {
     this.min = min; this.max = max;
     dflt = def; jmp = j; source = s;
@@ -379,6 +380,66 @@ class TableswitchOperand extends InsnOperand
     int cnt = jmp.length;
     for (int x=0; x<cnt; x++)
       { jmp[x].writeWideOffset(ce, source, out); }
+  }
+}
+
+class OffsetOperand extends InsnOperand {
+  int val;
+  boolean wide;
+  Insn parent;
+
+  OffsetOperand(Insn parent, int val) {
+    this(parent, val, false);
+  }
+
+  OffsetOperand(Insn parent, int val, boolean wide) {
+    this.parent = parent;
+    this.val = val;
+    this.wide = wide;
+  }
+
+  void resolve(ClassEnv e) { return; }
+
+  int size(ClassEnv e, CodeAttr ce) {
+    return wide ? 4 : 2;
+  }
+
+  void write(ClassEnv e, CodeAttr ce, DataOutputStream out)
+                              throws IOException, jasError {
+    if(wide)
+      out.writeInt(val);
+    else
+      out.writeShort(val);
+  }
+}
+
+class RelativeOffsetOperand extends InsnOperand {
+  int val;
+  boolean wide;
+  Insn parent;
+
+  RelativeOffsetOperand(Insn parent, int val) {
+    this(parent, val, false);
+  }
+
+  RelativeOffsetOperand(Insn parent, int val, boolean wide) {
+    this.parent = parent;
+    this.val = val;
+    this.wide = wide;
+  }
+
+  void resolve(ClassEnv e) { return; }
+
+  int size(ClassEnv e, CodeAttr ce) {
+    return wide ? 4 : 2;
+  }
+
+  void write(ClassEnv e, CodeAttr ce, DataOutputStream out)
+                              throws IOException, jasError {
+    if(wide)
+      out.writeInt(val);
+    else
+      out.writeShort(val);
   }
 }
 

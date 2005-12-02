@@ -19,7 +19,8 @@ public class Main {
     /**
      * The Jasmin version
      */
-    public static final String version = "v1.06";
+    public static final String version = "v2.0";
+    private static final boolean DEBUG = false;
 
     /**
      * Called to assemble a single file.
@@ -89,6 +90,8 @@ public class Main {
         } catch (jasError e) {
             classFile.report_error("JAS Error " + e.getMessage());
         } catch (Exception e) {
+            if(DEBUG)
+                e.printStackTrace();
   	    classFile.report_error(fname + ": exception - <" +
                               e.getClass().getName() + "> " + e.getMessage() +
                               ".");
@@ -120,6 +123,8 @@ public class Main {
                 debug = true;
             } else if (args[i].equals("-version")) {
                 System.out.println("Jasmin version: " + version);
+                if(DEBUG)
+                    System.out.println("(compiled with DEBUG flag on)");
 		System.exit(0);
             } else {
                 files[num_files++] = args[i];

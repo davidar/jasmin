@@ -29,6 +29,9 @@ abstract class ScannerUtils {
     public static Number convertNumber(String str)
                 throws NumberFormatException
     {
+        if(str.startsWith("+")) {
+            return Integer.parseInt(str.substring(1,str.length()));
+        }
         if (str.startsWith("0x")) {
             // base 16 integer
             return (convertInt(str.substring(2), 16));
@@ -79,8 +82,7 @@ abstract class ScannerUtils {
     // into three strings:
     //     "a/b/c", "d", "(xyz)v"
     //
-    public static String[] splitClassMethodSignature(String name)
-    {
+    public static String[] splitClassMethodSignature(String name) {
         String result[] = new String[3];
         int i, pos = 0, sigpos = 0;
         for (i = 0; i < name.length(); i++) {
@@ -88,10 +90,13 @@ abstract class ScannerUtils {
             if (c == '.' || c == '/') pos = i;
             else if (c == '(') {sigpos = i; break; }
         }
-        result[0] = convertDots(name.substring(0, pos));
-        result[1] = name.substring(pos + 1, sigpos);
-        result[2] = convertDots(name.substring(sigpos));
-
+        try {
+            result[0] = convertDots(name.substring(0, pos));
+            result[1] = name.substring(pos + 1, sigpos);
+            result[2] = convertDots(name.substring(sigpos));
+        } catch(StringIndexOutOfBoundsException e) {
+            throw new IllegalArgumentException("malformed signature : "+name);
+        }
         return result;
     }
 

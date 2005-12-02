@@ -32,19 +32,19 @@ parser code {:
 	public Scanner scanner;
 	public ClassFile classFile;
 	
-	public void report_error(String message, Object info)  {
-    	classFile.report_error("Warning - " + message);
+	public void report_error(String message, Object info) {
+    	    classFile.report_error("Warning - " + message);
 	}
 
 	public void report_fatal_error(String message, Object info)  {
-    	classFile.report_error("Error - " + message);
-    	// System.exit(-1);
+    	    classFile.report_error("Error - " + message);
+    	    // System.exit(-1);
 	}
 
 	parser(ClassFile classFile, Scanner scanner) {
 		super();
 
-		this.scanner = scanner;
+	    this.scanner = scanner;
 	    this.classFile = classFile;
 	}
 :};
@@ -64,14 +64,17 @@ scan with {:
 terminal token
     // Directives (words beginning with a '.')
     DCATCH, DCLASS, DEND, DFIELD, DLIMIT, DLINE, DMETHOD, DSET, DSUPER,
-    DSOURCE, DTHROWS, DVAR, DIMPLEMENTS, DINTERFACE,
+    DSOURCE, DTHROWS, DVAR, DIMPLEMENTS, DINTERFACE, DBYTECODE, DDEBUG,
+    DENCLOSING, DSIGNATURE, DSTACK,
 
     // keywords for directives
-    TO, USING, IS, FROM, METHOD,
+    TO, USING, IS, FROM, METHOD, SIGNATURE, STACK, OFFSET, LOCALS,
 
     // access types
     ABSTRACT, FINAL, INTERFACE, NATIVE, PRIVATE, PROTECTED, PUBLIC, STATIC,
     SYNCHRONIZED, TRANSIENT, VOLATILE,
+    // added these for java 1.5 compliance :
+    ANNOTATION, ENUM, BRIDGE, VARARGS,
 
     // complex instructions
     LOOKUPSWITCH, TABLESWITCH, DEFAULT,
@@ -83,6 +86,7 @@ terminal token
 terminal str_token Str, Word, Insn;
 terminal int_token Int;
 terminal num_token Num;
+terminal signed_num_token Signed;
 
 non terminal str_token classname;
 non terminal var_token optional_default, item;
@@ -96,21 +100,56 @@ non terminal symbol
        lookup_args, lookup_default, lookup_entry, lookup_list, method_list,
        method_spec, methods, set_expr, simple_instruction, source_spec,
        statement, statements, stmnt, super_spec, table, table_args, line_expr,
-       table_default, table_entry, table_list, throws_expr, var_expr
-    ;
+       table_default, table_entry, table_list, throws_expr, var_expr, bytecode_spec,
+       debug_extension, enclosing_spec, signature_spec, signature_expr, jasmin_header,
+
+   // used for StackMap attributes :
+       defstack, stack_map_frame_desc, endstack, stack_offset_def, stack_items,
+       stack_item, verification_type_info
+
+;
 
 non terminal int_token access;
 
 /* The grammar */
 
 jas_file ::=
-        source_spec
-        class_spec
-        super_spec
-	implements
+        jasmin_header
         fields
         methods
     ;
+
+jasmin_header ::=
+    bytecode_spec
+    source_spec
+    class_spec
+    super_spec
+    implements
+    signature_spec
+    debug_extension
+    enclosing_spec
+;
+
+
+// ---- Signature specification
+
+signature_spec ::=
+    DSIGNATURE Str:sig SEP
+        {: classFile.setSignature(sig.str_val); :}
+    |
+    /* nothing */
+;
+
+
+
+// ---- Bytecode version specification
+
+bytecode_spec ::=
+    DBYTECODE Num:n SEP
+        {: classFile.setVersion(n.num_val); :}
+    |
+    /* nothing */
+;
 
 
 // ---- Source specification
@@ -178,6 +217,14 @@ access_item ::=
     INTERFACE    {: access_val |= RuntimeConstants.ACC_INTERFACE; :}
     |
     ABSTRACT     {: access_val |= RuntimeConstants.ACC_ABSTRACT; :}
+    |
+    ANNOTATION   {: access_val |= RuntimeConstants.ACC_ANNOTATION; :}
+    |
+    ENUM         {: access_val |= RuntimeConstants.ACC_ENUM; :}
+    |
+    BRIDGE       {: access_val |= RuntimeConstants.ACC_BRIDGE; :}
+    |
+    VARARGS      {: access_val |= RuntimeConstants.ACC_VARARGS; :}
   ;
 
 // ---- Superclass specification
@@ -199,6 +246,36 @@ implements_spec ::= DIMPLEMENTS classname:name SEP
 	{: classFile.addInterface(name.str_val); :}
     ;
 
+
+// ---- SourceDebugExtension attribute specification
+
+debug_extension ::=
+    DDEBUG Str:s SEP
+        {:
+            classFile.setSourceDebugExtension(s.str_val);
+        :}
+    |
+    /* nothing */
+  ;
+
+
+// ---- EnclosingMethod attribute specification
+
+enclosing_spec ::=
+    DENCLOSING METHOD Word:w SEP
+        {:
+            classFile.setEnclosingMethod(w.str_val);
+        :}
+    |
+    DENCLOSING METHOD Str:s SEP
+        {:
+            classFile.setEnclosingMethod(s.str_val);
+        :}
+    |
+    /* nothing */
+  ;
+
+
 // ---- Fields
 
 fields ::= field_list | /* empty */ ;
@@ -206,12 +283,19 @@ fields ::= field_list | /* empty */ ;
 field_list ::= field_list field_spec | field_spec ;
 
 field_spec ::=
-    DFIELD access:a Word:name Word:sig optional_default:v SEP
+    DFIELD access:a Word:name Word:desc SIGNATURE Str:sig optional_default:v SEP
         {:
-            classFile.addField((short)a.int_val, name.str_val, sig.str_val,
-                            v.var_val);
+            classFile.addField((short)a.int_val, name.str_val, desc.str_val,
+                               sig.str_val, v.var_val);
+        :}
+    |
+    DFIELD access:a Word:name Word:desc optional_default:v SEP
+        {:
+            classFile.addField((short)a.int_val, name.str_val, desc.str_val,
+                               null, v.var_val);
         :}
   ;
+
 
 // default value for a field
 optional_default ::=
@@ -277,14 +361,63 @@ stmnt ::=
     |
     label
     |
+    defstack stack_map_frame_desc endstack
+    |
     /* empty */
   ;
+
+
+defstack ::= DSTACK SEP
+    {: classFile.beginStack(); :}
+;
+
+stack_map_frame_desc ::=
+    stack_offset_def
+    stack_items
+;
+
+stack_offset_def ::=
+    OFFSET Int:n SEP
+        {: classFile.plantStackOffset(n.int_val); :}
+;
+
+stack_items ::= stack_items stack_item | /* nothing */ ;
+
+stack_item ::= 
+    LOCALS Word:w SEP
+        {: classFile.plantStackLocals(w.str_val, null); :}
+    |
+    LOCALS Word:w Word:val SEP
+        {: classFile.plantStackLocals(w.str_val, val.str_val); :}
+    |
+    LOCALS Word:w Int:n SEP
+        {: classFile.plantStackLocals(w.str_val, String.valueOf(n.int_val)); :}
+    |
+    STACK Word:w SEP
+        {: classFile.plantStackStack(w.str_val, null); :}
+    |
+    STACK Word:w Word:val SEP
+        {: classFile.plantStackStack(w.str_val, val.str_val); :}
+    |
+    STACK Word:w Int:n SEP
+        {: classFile.plantStackStack(w.str_val, String.valueOf(n.int_val)); :}
+;
+
+endstack ::= DEND STACK
+    {: classFile.endStack(); :}
+;
+
 
 // label:
 label ::=
     Word:label COLON
         {:
             classFile.plantLabel(label.str_val);
+        :}
+    |
+    Int:label COLON instruction
+        {:
+            classFile.plantLabel(String.valueOf(label.int_val));
         :}
   ;
 
@@ -302,6 +435,8 @@ directive ::=
     DCATCH catch_expr
     |
     DSET set_expr
+    |
+    DSIGNATURE signature_expr
   ;
 
 
@@ -319,6 +454,12 @@ var_expr ::=
         {:
              classFile.addVar(null, null, name.str_val, sig.str_val, reg.int_val);
         :}
+    |
+    Int:reg IS Word:name Word:sig FROM Int:soff TO Int:eoff
+        {:
+             classFile.addVar(soff.int_val, eoff.int_val, name.str_val,
+                            sig.str_val, reg.int_val);
+        :}
 ;
 
 
@@ -326,18 +467,23 @@ var_expr ::=
 // .limit locals <val>
 
 limit_expr ::=
-    Word:w Int:v
-      {:
         // .limit locals
-        if (w.str_val.equals("locals")
-                 || w.str_val.equals("vars")) // "vars" for historic reasons
-            classFile.setVarSize((short)v.int_val);
-        // .limit stack
-        else if (w.str_val.equals("stack"))
-            classFile.setStackSize((short)v.int_val);
-        else
-            classFile.report_error(".limit expected \"stack\" or \"locals\", but got "
-                          + w.str_val);
+    LOCALS Int:v
+      {:
+        classFile.setVarSize((short)v.int_val);
+      :}
+
+       // .limit stack
+   |
+   STACK Int:v
+      {:
+         classFile.setStackSize((short)v.int_val);
+      :}
+   |
+   Word:w Int:v
+      {:
+         classFile.report_error(".limit expected \"stack\" or \"locals\", but got "
+                      + w.str_val);
       :}
 ;
 
@@ -360,8 +506,17 @@ catch_expr ::=
     classname:aclass FROM Word:fromlab TO Word:tolab USING Word:branchlab
         {:
             classFile.addCatch(aclass.str_val,
-                            fromlab.str_val, tolab.str_val,
-                            branchlab.str_val);
+                               fromlab.str_val,
+                               tolab.str_val,
+                               branchlab.str_val);
+        :}
+    |
+    classname:aclass FROM Int:fromoff TO Int:tooff USING Int:branchoff
+        {:
+            classFile.addCatch(aclass.str_val,
+                               fromoff.int_val,
+                               tooff.int_val,
+                               branchoff.int_val);
         :}
   ;
 
@@ -376,11 +531,20 @@ set_expr ::=
     Word:name Str:v  {: scanner.dict.put(name.str_val, v); :}
 ;
 
+// .signature <sig>
+signature_expr ::=
+    Str:sig
+        {:
+            classFile.setMethodSignature(sig.str_val);
+        :}
+;
+
+
 instruction ::=
     simple_instruction
     |
     complex_instruction
- ;
+;
 
 // Various patterns of instruction:
 //      instruction [<pattern>]
@@ -424,6 +588,11 @@ simple_instruction ::=
         {:
             classFile.plantString(i.str_val, n.str_val);
         :}
+    |
+    Insn:i Signed:n
+        {:
+            classFile.plantRelativeGoto(i.str_val, n.int_val);
+        :}
   ;
 
 // complex (i.e. multiline) instructions
@@ -462,11 +631,19 @@ lookup_entry ::=
         {:
             classFile.addLookupswitch(i.int_val, w.str_val);
         :}
+    |
+    Int:i COLON Int:off SEP
+        {:
+            classFile.addLookupswitch(i.int_val, off.int_val);
+        :}
   ;
 
 lookup_default ::=
     DEFAULT COLON Word:w
         {: classFile.endLookupswitch(w.str_val); :}
+    |
+    DEFAULT COLON Int:off
+        {: classFile.endLookupswitch(off.int_val); :}
   ;
 
 
@@ -503,6 +680,11 @@ table_entry ::=
         {:
             classFile.addTableswitch(w.str_val);
         :}
+    |
+    Int:off SEP
+        {:
+            classFile.addTableswitch(off.int_val);
+        :}
   ;
 
 table_default ::=
@@ -510,10 +692,28 @@ table_default ::=
         {:
             classFile.endTableswitch(w.str_val);
         :}
+    |
+    DEFAULT COLON Int:off
+        {:
+            classFile.endTableswitch(off.int_val);
+        :}
   ;
 
 
 /* --- Revision History ---------------------------------------------------
+--- Daniel Reynaud, Oct 22 2005
+    Added .enclosing, .debug and .signature directives and the signature
+    option in fields declaration
+
+--- Daniel Reynaud, Oct 21 2005
+    Added ANNOTATION, ENUM, BRIDGE and VARARGS access flags
+
+--- Daniel Reynaud, Oct 20 2005
+    Added support for offsets instead of labels
+
+--- Daniel Reynaud, Oct 19 2005
+    Added .bytecode directive
+
 --- Jonathan Meyer, Mar 1 1997
     Added ACC_SUPER flag - needed by 1.1.
 

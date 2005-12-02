@@ -19,8 +19,8 @@ public class LookupswitchInsn extends Insn implements RuntimeConstants
    * @param target Label array of corresponding targets for each match
    */
 
-  public LookupswitchInsn(Label def, int match[], Label target[])
-  {
+  public LookupswitchInsn(LabelOrOffset def, int match[],
+                                    LabelOrOffset target[]) {
     opc = opc_lookupswitch;
     operand = new LookupswitchOperand(this, def, match, target);
   }

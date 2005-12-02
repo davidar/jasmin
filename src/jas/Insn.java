@@ -72,14 +72,43 @@ public class Insn implements RuntimeConstants
    * 
    */
 
+  /**
+   * Added branch instructions
+   */
+
   public Insn(int opc, int val)
     throws jasError
   {
     this.opc = opc;
     switch (opc)
       {
-      case opc_bipush: operand = new ByteOperand(val); break;
-      case opc_sipush: operand = new ShortOperand(val); break;
+      case opc_bipush: 
+          operand = new ByteOperand(val); break;
+      case opc_sipush: 
+      case opc_goto:
+      case opc_if_acmpeq:
+      case opc_if_acmpne:
+      case opc_if_icmpeq:
+      case opc_if_icmpge:
+      case opc_if_icmpgt:
+      case opc_if_icmple:
+      case opc_if_icmplt:
+      case opc_if_icmpne:
+      case opc_ifeq:
+      case opc_ifge:
+      case opc_ifgt:
+      case opc_ifle:
+      case opc_iflt:
+      case opc_ifne:
+      case opc_ifnonnull:
+      case opc_ifnull:
+      case opc_jsr:
+        operand = new OffsetOperand(this, val); break;
+
+      case opc_goto_w:
+      case opc_jsr_w:
+        operand = new OffsetOperand(this, val, true); break;
+
       case opc_newarray:
         operand = new UnsignedByteOperand(val);
         break;
@@ -101,6 +130,46 @@ public class Insn implements RuntimeConstants
           (opcNames[opc] + " does not take a numeric argument");
       }
   }
+
+
+// used for relative offsets (ex : goto +5)
+
+  public Insn(int opc, int val, boolean relative)
+    throws jasError
+  {
+    this.opc = opc;
+    switch (opc)
+      {
+      case opc_goto:
+      case opc_if_acmpeq:
+      case opc_if_acmpne:
+      case opc_if_icmpeq:
+      case opc_if_icmpge:
+      case opc_if_icmpgt:
+      case opc_if_icmple:
+      case opc_if_icmplt:
+      case opc_if_icmpne:
+      case opc_ifeq:
+      case opc_ifge:
+      case opc_ifgt:
+      case opc_ifle:
+      case opc_iflt:
+      case opc_ifne:
+      case opc_ifnonnull:
+      case opc_ifnull:
+      case opc_jsr:
+        operand = new RelativeOffsetOperand(this, val); break;
+
+      case opc_goto_w:
+      case opc_jsr_w:
+        operand = new RelativeOffsetOperand(this, val, true); break;
+
+      default:
+        throw new jasError
+          (opcNames[opc] + " does not take a signed numeric argument");
+      }
+  }
+
   /**
    * Instructions that take a Label as an argument. These are
    * opc_jsr,
@@ -226,10 +295,15 @@ public class Insn implements RuntimeConstants
     if (operand != null)
       operand.write(e, ce, out);
   }
+
   int size(ClassEnv e, CodeAttr ce)
     throws jasError
   {
     if (operand == null) return 1;
     return (1 + operand.size(e, ce));
+  }
+
+  public String toString() {
+    return "instruction "+opc+" "+((operand!=null)?operand:"");
   }
 }

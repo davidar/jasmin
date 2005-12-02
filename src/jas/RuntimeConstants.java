@@ -38,6 +38,12 @@ public interface RuntimeConstants {
     public static final int ACC_ABSTRACT = 1024;
     public static final int ACC_SUPER = 32;
 
+    public static final int ACC_ANNOTATION = 0x2000; 
+    public static final int ACC_ENUM = 0x4000;
+    public static final int ACC_BRIDGE = 0x0040;
+    public static final int ACC_VARARGS = 0x0080;
+
+
     // types for newarray
     public static final int T_CLASS = 2;
     public static final int T_BOOLEAN = 4;

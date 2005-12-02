@@ -107,10 +107,10 @@ class Scanner {
     public token next_token()
                 throws java.io.IOException, jasError
     {
-
         token_line_num = line_num;
 
         for (;;) {
+            boolean signed=false;
             switch (next_char) {
 
             case ';':
@@ -134,9 +134,12 @@ class Scanner {
                 token_line_num = line_num;
                 return new token(sym.SEP);
 
+
+            case '-': case '+':
+                signed = true;
+
             case '0': case '1': case '2': case '3': case '4':
             case '5': case '6': case '7': case '8': case '9':
-            case '-':
             case '.':                       // a number
                 {
                     int pos = 0;
@@ -174,7 +177,10 @@ class Scanner {
                     }
 
                     if (num instanceof Integer) {
-                        return new int_token(sym.Int, num.intValue());
+                        if(signed)
+                            return new signed_num_token(sym.Signed, num.intValue());
+                        else
+                            return new int_token(sym.Int, num.intValue());
                     } else {
                         return new num_token(sym.Num, num);
                     }
@@ -191,14 +197,15 @@ class Scanner {
                         if (next_char == '\\') {
                             advance();
                             switch (next_char) {
-                            case 'n': next_char = '\n'; break;
-                            case 'r': next_char = '\r'; break;
-                            case 't': next_char = '\t'; break;
-                            case 'f': next_char = '\f'; break;
-                            case 'b': next_char = '\b'; break;
+                            case 'n':   next_char = '\n'; break;
+                            case 'r':   next_char = '\r'; break;
+                            case 't':   next_char = '\t'; break;
+                            case 'f':   next_char = '\f'; break;
+                            case 'b':   next_char = '\b'; break;
                             // case 'u': next_char = 'u'; break;
-                            case '"': next_char = '"'; break;
-                            case '\'': next_char = '\''; break;
+                            case '"' :  next_char = '"'; break;
+                            case '\'' : next_char = '\''; break;
+                            case '\\' : next_char = '\\'; break;
 
                             case '0': case '1': case '2': case '3': case '4':
                             case '5': case '6': case '7':
@@ -286,6 +293,8 @@ class Scanner {
 };
 
 /* --- Revision History ---------------------------------------------------
+--- Daniel Reynaud, Oct 19 2005
+    Added '\\' escape sequence
 --- Jonathan Meyer, Feb 8 1997
     Converted to be non-static
 --- Jonathan Meyer, Oct 30 1996
