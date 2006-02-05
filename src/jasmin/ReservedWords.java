@@ -27,12 +27,16 @@ abstract class ReservedWords {
         reserved_words = new Hashtable();
 
         // Jasmin directives
+        reserved_words.put(".annotation", new token(sym.DANNOTATION));
+        reserved_words.put(".attribute", new token(sym.DATTRIBUTE));
         reserved_words.put(".bytecode", new token(sym.DBYTECODE));
         reserved_words.put(".catch", new token(sym.DCATCH));
         reserved_words.put(".class", new token(sym.DCLASS));
+        reserved_words.put(".deprecated", new token(sym.DDEPRECATED));
         reserved_words.put(".end", new token(sym.DEND));
         reserved_words.put(".field", new token(sym.DFIELD));
         reserved_words.put(".implements", new token(sym.DIMPLEMENTS));
+        reserved_words.put(".inner", new token(sym.DINNER));
         reserved_words.put(".interface", new token(sym.DINTERFACE));
         reserved_words.put(".limit", new token(sym.DLIMIT));
         reserved_words.put(".line", new token(sym.DLINE));
@@ -48,6 +52,7 @@ abstract class ReservedWords {
         reserved_words.put(".stack", new token(sym.DSTACK));
 
         // reserved_words used in Jasmin directives
+        reserved_words.put("field", new token(sym.FIELD));
         reserved_words.put("from", new token(sym.FROM));
         reserved_words.put("method", new token(sym.METHOD));
         reserved_words.put("to", new token(sym.TO));
@@ -57,6 +62,13 @@ abstract class ReservedWords {
         reserved_words.put("stack", new token(sym.STACK));
         reserved_words.put("offset", new token(sym.OFFSET));
         reserved_words.put("locals", new token(sym.LOCALS));
+        reserved_words.put("inner", new token(sym.INNER));
+        reserved_words.put("outer", new token(sym.OUTER));
+        reserved_words.put("class", new token(sym.CLASS));
+        reserved_words.put("visible", new token(sym.VISIBLE));
+        reserved_words.put("invisible", new token(sym.INVISIBLE));
+        reserved_words.put("visibleparam", new token(sym.VISIBLEPARAM));
+        reserved_words.put("invisibleparam", new token(sym.INVISIBLEPARAM));
 
         // Special-case instructions
         reserved_words.put("tableswitch", new token(sym.TABLESWITCH));
@@ -80,5 +92,7 @@ abstract class ReservedWords {
         reserved_words.put("enum", new token(sym.ENUM));
         reserved_words.put("bridge", new token(sym.BRIDGE));
         reserved_words.put("varargs", new token(sym.VARARGS));
+        reserved_words.put("fpstrict", new token(sym.STRICT));
+        reserved_words.put("synthetic", new token(sym.SYNTHETIC));
     }
 }

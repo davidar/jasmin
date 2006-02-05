@@ -13,27 +13,26 @@ import java.util.Enumeration;
 public class StackMapAttr
 {
   static CP attr = new AsciiCP("StackMap");
-  private Vector<StackMapFrame> frames;
+  private Vector frames;
 
 
   public StackMapAttr()
-  { frames = new Vector<StackMapFrame>();
-  }
+  { frames = new Vector(); }
 
   public void addFrame(StackMapFrame f) {
     frames.add(f);
   }
 
-  public int size(ClassEnv e) {
+  public int size(ClassEnv e, CodeAttr ce) {
     ByteArrayOutputStream buf = new ByteArrayOutputStream();
     DataOutputStream bufout = new DataOutputStream(buf);
 
     // not fully compliant to the spec !
     try {
       bufout.writeShort(frames.size());
-      Enumeration<StackMapFrame> en = frames.elements();
+      Enumeration en = frames.elements();
       while(en.hasMoreElements())
-        en.nextElement().write(e, bufout);
+        ((StackMapFrame)en.nextElement()).write(e, ce, bufout);
     } catch(IOException ex) {
       System.err.println("UNEXPECTED IO EXCEPTION");
       ex.printStackTrace();
@@ -48,12 +47,12 @@ public class StackMapAttr
   void resolve(ClassEnv e)
   { e.addCPItem(attr);
 
-    Enumeration<StackMapFrame> en = frames.elements();
+    Enumeration en = frames.elements();
     while(en.hasMoreElements())
-      en.nextElement().resolve(e);
+      ((StackMapFrame)en.nextElement()).resolve(e);
   }
 
-  void write(ClassEnv e, CodeAttr code, DataOutputStream out)
+  void write(ClassEnv e, CodeAttr ce, DataOutputStream out)
     throws IOException, jasError
   {
     out.writeShort(e.getCPIndex(attr));
@@ -64,9 +63,9 @@ public class StackMapAttr
 
     // not fully compliant to the spec !
     bufout.writeShort(frames.size());
-    Enumeration<StackMapFrame> en = frames.elements();
+    Enumeration en = frames.elements();
     while(en.hasMoreElements())
-      en.nextElement().write(e, bufout);
+      ((StackMapFrame)en.nextElement()).write(e, ce, bufout);
 
     // length
     out.writeInt(buf.toByteArray().length);

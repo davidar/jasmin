@@ -8,11 +8,12 @@ package jas;
 
 import java.io.*;
 
-public class VerificationTypeInfo 
+public class VerificationTypeInfo
 {
   private int tag;
   private ClassCP cls;
   private int index;
+  private Label un_label;
 
   public VerificationTypeInfo(String item) throws jasError
   { this(item, null); }
@@ -39,11 +40,13 @@ public class VerificationTypeInfo
         cls = new ClassCP(val);
     }
     else if(item.equals("Uninitialized")) {
+        if(val==null)
+            throw new jasError("Uninitialized requires an integer or label");
         tag = 8;
         try {
             index = Integer.parseInt(val);
         } catch(Exception e) {
-            throw new jasError("Uninitialized requires an integer");
+            un_label = new Label(val);
         }
     }
     else throw new jasError("Unknown item object : "+item);
@@ -57,7 +60,7 @@ public class VerificationTypeInfo
     }
   }
 
-  void write(ClassEnv e, DataOutputStream out)
+  void write(ClassEnv e, CodeAttr ce, DataOutputStream out)
     throws IOException, jasError
   {
     out.writeByte(tag);
@@ -66,10 +69,14 @@ public class VerificationTypeInfo
 
 // the following is not fully compliant to the CLDC spec !
     if(tag==8) { // Uninitialized
-      if((index&0xFFFF) == index) // fits as a short
-        out.writeShort(index);
-      else
-        out.writeInt(index);
+      if(un_label != null)
+        un_label.writeOffset(ce, null, out);
+      else {
+        if((index&0xFFFF) == index) // fits as a short
+          out.writeShort(index);
+        else
+          out.writeInt(index);
+      }
     }
   }
 }

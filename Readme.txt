@@ -1,9 +1,9 @@
 Jasmin README file                         1 March 1997, Jonathan Meyer
-                                             Last updated December 2005
+                                              Last updated October 2004
 
 Introduction
 ------------
-Welcome to Jasmin version 2.0.
+Welcome to Jasmin version 1.1.
 
 Jasmin is a Java Assembler Interface. It takes ASCII descriptions for Java
 classes, written in a simple assembler-like syntax, using the Java
@@ -24,13 +24,6 @@ no major upgrades since 1997. By 2004 Sun still has not released an
 official assembler, so I decided to release Jasmin as a sourceforge
 project. Hopefully this will inject some fresh life into the project...
 
-*** a new developer has been added to the SourceForge project
-Daniel Reynaud has defined the JasminXT language. See the documentation
-for a full list of features supported by JasminXT. Jasmin 2.0 is also
-included in Daniel Reynaud's tinapoc project :
-
-    http://tinapoc.sourceforge.net
-
 Home Page
 ---------
 Check out the Jasmin home page at:
@@ -39,9 +32,9 @@ Check out the Jasmin home page at:
 
 Requirements
 ------------
-Jasmin is written in Java, and should work with most Java 1.5 environments. 
+Jasmin is written in Java, and should work with most Java 1.1 environments. 
 
-To run Jasmin you need to have a Java 2 Runtime Environment available (e.g. JDK 1.5). 
+To run Jasmin you need to have a Java 2 Runtime Environment available (e.g. JDK 1.4). 
 This can be downloaded from "http://www.javasoft.com/j2se/".
 
 Getting Started
@@ -51,9 +44,9 @@ To run Jasmin, execute the Jarfile, specifying any files to assemble
 as command-line parameters, e.g. to assemble the "HelloWorld.j" file in examples,
 first use cd to change into the Jasmin directory:
 
-    cd c:\jasmin-2.0                                   [Windows]
+    cd c:\jasmin-1.1                                   [Windows]
 or
-    cd ~/jasmin-2.0                                    [Unix]
+    cd ~/jasmin-1.1                                    [Unix]
 
 Then, to run Jasmin, use:
 
@@ -81,12 +74,12 @@ to build Jasmin. In brief, you need to:
 
 For example, on Windows, this might look something like:
 
-    cd c:\jasmin-2.0                 # change to Jasmin directory
+    cd c:\jasmin-1.1                 # change to Jasmin directory
     build all
 			
 Or, for Unix, it might be like:
 
-    cd ~/jasmin-2.0                  # change to Jasmin directory
+    cd ~/jasmin-1.1                  # change to Jasmin directory
     ./build.sh all
 
 These scripts use the build.xml configuration file to specify build parameters.
@@ -112,7 +105,7 @@ The following files are included in this distribution:
 
 Copyright
 ---------
-Jasmin is Copyright (1997-2005) Jonathan Meyer, under the terms of
+Jasmin is Copyright (1997-2004) Jonathan Meyer, under the terms of
 the GNU General Public License. See license-jasmin.txt for more.
 
 Jasmin uses the JAS package which has its own copyright - see lib/jas/README.

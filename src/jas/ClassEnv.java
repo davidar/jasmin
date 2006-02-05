@@ -30,6 +30,9 @@ public class ClassEnv implements RuntimeConstants
   SignatureAttr signature;
   SourceDebugExtensionAttr debug;
   EnclosingMethodAttr enclosing;
+  DeprecatedAttr depr;
+  InnerClassesAttr innerclasses;
+  AnnotationAttr annVis, annInvis;
   Vector generic;
 
   public ClassEnv()
@@ -44,6 +47,7 @@ public class ClassEnv implements RuntimeConstants
     interfaces = new Vector();
     vars = new Vector();
     methods = new Vector();
+    annVis = annInvis = null;
     generic = new Vector();
   }
 
@@ -87,7 +91,7 @@ public class ClassEnv implements RuntimeConstants
   /**
    * Add this to the list of interfaces supposedly implemented
    * by this class. Note that each CP is usually a ClassCP.
-   * @param ilist An array of CP items representing the 
+   * @param ilist An array of CP items representing the
    *          interfaces implemented by this class.
    */
   public void addInterface(CP ilist[])
@@ -175,6 +179,14 @@ public class ClassEnv implements RuntimeConstants
       { numExtra++; }
     if (signature != null)
       { numExtra++; }
+    if (innerclasses != null)
+      { numExtra++; }
+    if (depr != null)
+      { numExtra++; }
+    if (annVis != null)
+      { numExtra++; }
+    if (annInvis != null)
+      { numExtra++; }
     numExtra += generic.size();
 
     out.writeShort(numExtra);
@@ -186,10 +198,18 @@ public class ClassEnv implements RuntimeConstants
       { enclosing.write(this, out); }
     if (signature != null)
       { signature.write(this, out); }
+    if (innerclasses != null)
+      { innerclasses.write(this, out); }
+    if (depr != null)
+      { depr.write(this, out); }
+    if (annVis != null)
+      { annVis.write(this, out); }
+    if (annInvis != null)
+      { annInvis.write(this, out); }
     for (Enumeration gen=generic.elements(); gen.hasMoreElements(); )
       {
-	GenericAttr gattr = (GenericAttr)gen.nextElement();
-	gattr.write(this, out);
+        GenericAttr gattr = (GenericAttr)gen.nextElement();
+        gattr.write(this, out);
       }
     out.flush();
   }
@@ -211,49 +231,12 @@ public class ClassEnv implements RuntimeConstants
     if ((intern = (CP)(cpe.get(uniq))) == null)
       {
 				// add it
-	cpe.put(uniq, cp);
+        cpe.put(uniq, cp);
 				// resolve it so it adds anything
 				// which it depends on
-	cp.resolve(this);
+        cp.resolve(this);
       }
   }
-
-  /**
-   * Here is where code gets added to a class.
-   * @param acc method_access permissions, expressed with some combination
-   *       of the values defined in RuntimeConstants
-   * @param name Name of the method
-   * @param desc Descriptor for the method
-   * @param code Actual code for the method
-   * @param ex Any exception attribute to be associated with method
-   */
-  public void
-  addMethod(short acc, String name, String desc, CodeAttr code, ExceptAttr ex)
-  {
-    addMethod(acc, name, desc, null, code, ex);
-  }
-
-
-  /**
-   * Here is where code gets added to a class.
-   * @param acc method_access permissions, expressed with some combination
-   *       of the values defined in RuntimeConstants
-   * @param name Name of the method
-   * @param desc Descriptor for the method
-   * @param sig  Signature for the method
-   * @param code Actual code for the method
-   * @param ex Any exception attribute to be associated with method
-   */
-  public void
-  addMethod(short acc, String name, String desc, SignatureAttr sig, 
-            CodeAttr code, ExceptAttr ex)
-  {
-    Method x = new Method(acc, new AsciiCP(name), new AsciiCP(desc),
-                          sig, code, ex);
-    x.resolve(this);
-    methods.addElement(x);
-  }
-
 
   /**
    * Add an attribute specifying the name of the source file
@@ -277,7 +260,14 @@ public class ClassEnv implements RuntimeConstants
    * @param debug String the extended debug information
    */
   public void setSourceDebugExtension(String debug)
-  { this.debug = new SourceDebugExtensionAttr(debug); this.debug.resolve(this); }
+  {
+    if ( this.debug != null )
+        this.debug.append(debug);
+    else {
+        this.debug = new SourceDebugExtensionAttr(debug);
+        this.debug.resolve(this);
+    }
+  }
 
 
   /**
@@ -300,6 +290,9 @@ public class ClassEnv implements RuntimeConstants
     this.signature.resolve(this); }
 
 
+  public void setDeprecated(DeprecatedAttr depr)
+  { this.depr = depr; depr.resolve(this); }
+
   /**
    * Add a generic attribute to the class file. A generic attribute
    * contains a stream of uninterpreted bytes which is ignored by
@@ -308,6 +301,39 @@ public class ClassEnv implements RuntimeConstants
    */
   public void addGenericAttr(GenericAttr g)
   { generic.addElement(g); g.resolve(this); }
+
+  public void addInnerClass(short iacc, String name, String inner, String outer)
+  {
+    if(innerclasses == null) {
+      innerclasses = new InnerClassesAttr();
+      innerclasses.resolve(this);
+    }
+    InnerClass ic = new InnerClass(iacc, name, inner, outer);
+    ic.resolve(this);
+    innerclasses.addInnerClass(ic);
+  }
+
+  /*
+   * procedure group for annotation description
+  */
+  public Annotation addAnnotation(boolean visible, String clsname)
+  {
+    Annotation ann = new Annotation(clsname);
+    AnnotationAttr aa = visible ? annVis : annInvis;
+    if(aa == null) {
+      aa = new AnnotationAttr(visible);
+      if(visible) annVis = aa;
+      else annInvis = aa;
+    }
+    aa.add(ann);
+    return(ann);
+  }
+
+  public void endHeader()
+  {
+    if(annVis != null) annVis.resolve(this);
+    if(annInvis != null) annInvis.resolve(this);
+  }
 
   /**
    * This allows more control over generating CP's for methods
@@ -338,7 +364,7 @@ public class ClassEnv implements RuntimeConstants
    * @param version_low short
    */
   public void setVersion(short version_high, short version_low)
-  { 
+  {
     version_hi = version_high;
     version_lo = version_low;
   }

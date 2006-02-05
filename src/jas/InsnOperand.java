@@ -23,19 +23,28 @@ class LabelOperand extends InsnOperand
   Label target;
   Insn source;
   boolean wide;
+  int ref;
 
-  LabelOperand(Label l, Insn source)
-  { target = l; this.source = source; this.wide = false; }
-  LabelOperand(Label l, Insn source, boolean wide)
-  { target = l; this.source = source; this.wide = wide; }
+  LabelOperand(Label l, Insn source, int line)
+  { target = l; this.source = source; this.wide = false; this.ref = line; }
+  LabelOperand(Label l, Insn source, boolean wide, int line)
+  { target = l; this.source = source; this.wide = wide; this.ref = line; }
   int size(ClassEnv ce, CodeAttr code) { if (wide) return 4; else return 2; }
   void resolve(ClassEnv e) { return; }
   void write(ClassEnv e, CodeAttr ce, DataOutputStream out)
     throws IOException, jasError
   {
     if (wide) { target.writeWideOffset(ce, source, out); }
-    else { target.writeOffset(ce, source, out); } }
-}
+    else {
+      int offset = ce.getPc(target);
+      if (source != null)
+        offset -= ce.getPc(source);
+      if (offset > 32767 || offset < -32768)
+        throw new jasError
+          ("reference from line " +ref+ " exceed size for short");
+      target.writeOffset(ce, source, out); }
+    }
+  }
 
 class UnsignedByteOperand extends InsnOperand
 {
@@ -191,7 +200,7 @@ class LdcOperand extends InsnOperand implements RuntimeConstants
   }
 }
 
-  
+
 class InvokeinterfaceOperand extends InsnOperand
 {
   CP cpe;
@@ -330,7 +339,7 @@ class LookupswitchOperand extends InsnOperand
   }
 }
 
-    
+
 class TableswitchOperand extends InsnOperand
 {
   int min, max;

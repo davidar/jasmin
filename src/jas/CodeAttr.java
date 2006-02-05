@@ -22,6 +22,7 @@ public class CodeAttr
   Catchtable ctb;
   LineTableAttr ltab;
   LocalVarTableAttr lvar;
+  LocalVarTypeTableAttr lvtyp;
   StackMapAttr stackmap;
   Vector generic;
 
@@ -60,6 +61,14 @@ public class CodeAttr
 
   public void setLocalVarTable(LocalVarTableAttr lvar)
   { this.lvar = lvar; }
+
+
+  /**
+   * Set the local variable type information for this method
+   */
+
+  public void setLocalVarTypeTable(LocalVarTypeTableAttr lvtyp)
+  { this.lvtyp = lvtyp; }
 
 
   /**
@@ -107,6 +116,7 @@ public class CodeAttr
     if (ctb != null)  ctb.resolve(e);
     if (ltab != null) ltab.resolve(e);
     if (lvar != null) lvar.resolve(e);
+    if (lvtyp != null) lvtyp.resolve(e);
     if (stackmap != null) stackmap.resolve(e);
     for (Enumeration gen = generic.elements(); gen.hasMoreElements();)
       {
@@ -156,7 +166,8 @@ public class CodeAttr
     if (ctb != null) total_size += ctb.size();
     if (ltab != null) total_size += ltab.size();
     if (lvar != null) total_size += lvar.size();
-    if (stackmap != null) total_size += stackmap.size(e);
+    if (lvtyp != null) total_size += lvtyp.size();
+    if (stackmap != null) total_size += stackmap.size(e, this);
     for (Enumeration gen = generic.elements(); gen.hasMoreElements();)
       {
 	GenericAttr gattr = (GenericAttr)(gen.nextElement());
@@ -184,6 +195,7 @@ public class CodeAttr
     short extra = 0;
     if (ltab != null) extra++;
     if (lvar != null) extra++;
+    if (lvtyp != null) extra++;
     if (stackmap != null) extra++;
     extra += generic.size();
     out.writeShort(extra);
@@ -191,6 +203,8 @@ public class CodeAttr
       { ltab.write(e, this, out); }
     if (lvar != null)
       { lvar.write(e, this, out); }
+    if (lvtyp != null)
+      { lvtyp.write(e, this, out); }
     if (stackmap != null)
       { stackmap.write(e, this, out); }
     for (Enumeration gen = generic.elements(); gen.hasMoreElements();)

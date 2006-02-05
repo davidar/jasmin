@@ -1,5 +1,5 @@
 /**
- * This is an entry to be used as part of a LocalVarTableAttr.
+ * This is an entry to be used as part of a LocalVarTableAttr and LocalVarTypeTable.
  * It defines the scope and location of a local variable for a method
  * and is used while debugging.
  */

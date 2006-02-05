@@ -1,12 +1,5 @@
 Jasmin Revision History                                     Jonathan Meyer
 
-
-02 Dec 2005 - Release 2.0 by Daniel Reynaud
-
-   * defined the JasminXT language, see the documentation for more details
-
-
-
 15 Oct 2004 - Release 1.1
 
    * Switched to Ant Build System

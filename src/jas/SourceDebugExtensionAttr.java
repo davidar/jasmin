@@ -23,6 +23,9 @@ public class SourceDebugExtensionAttr
   public SourceDebugExtensionAttr(String debug)
   { this.debug = debug; }
 
+  public void append(String debug)
+  { this.debug += debug; }
+
   void resolve(ClassEnv e)
   { e.addCPItem(attr); }
 
@@ -34,10 +37,10 @@ public class SourceDebugExtensionAttr
     ByteArrayOutputStream buf = new ByteArrayOutputStream();
     DataOutputStream dat = new DataOutputStream(buf);
     dat.writeUTF(debug);
-    DataInputStream in = new DataInputStream(new ByteArrayInputStream(buf.toByteArray()));
 
-// need to write the length of the attribute first
-    out.writeInt(2+in.readUnsignedShort());
+// need to write the length of the attribute first as int
+// (writeUTF store it in stream as short)
+    out.writeShort(0);
 // and then write the actual utf8 string
     buf.writeTo(out);
   }

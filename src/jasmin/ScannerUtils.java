@@ -30,7 +30,7 @@ abstract class ScannerUtils {
                 throws NumberFormatException
     {
         if(str.startsWith("+")) {
-            return Integer.parseInt(str.substring(1,str.length()));
+            return new Integer(str.substring(1,str.length()));
         }
         if (str.startsWith("0x")) {
             // base 16 integer

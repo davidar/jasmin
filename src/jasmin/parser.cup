@@ -31,7 +31,7 @@ parser code {:
 
 	public Scanner scanner;
 	public ClassFile classFile;
-	
+
 	public void report_error(String message, Object info) {
     	    classFile.report_error("Warning - " + message);
 	}
@@ -49,6 +49,8 @@ parser code {:
 	}
 :};
 
+//debug with System.err.println;
+
 init with {:
 	action_obj.scanner = scanner;
 	action_obj.classFile = classFile;
@@ -65,16 +67,19 @@ terminal token
     // Directives (words beginning with a '.')
     DCATCH, DCLASS, DEND, DFIELD, DLIMIT, DLINE, DMETHOD, DSET, DSUPER,
     DSOURCE, DTHROWS, DVAR, DIMPLEMENTS, DINTERFACE, DBYTECODE, DDEBUG,
-    DENCLOSING, DSIGNATURE, DSTACK,
+    DENCLOSING, DSIGNATURE, DSTACK, DATTRIBUTE, DDEPRECATED, DINNER,
+    DANNOTATION,
 
     // keywords for directives
-    TO, USING, IS, FROM, METHOD, SIGNATURE, STACK, OFFSET, LOCALS,
+    TO, USING, IS, FROM, METHOD, SIGNATURE, STACK, OFFSET, LOCALS, FIELD,
+    CLASS, INNER, OUTER, VISIBLE, INVISIBLE, VISIBLEPARAM, INVISIBLEPARAM,
 
     // access types
     ABSTRACT, FINAL, INTERFACE, NATIVE, PRIVATE, PROTECTED, PUBLIC, STATIC,
     SYNCHRONIZED, TRANSIENT, VOLATILE,
     // added these for java 1.5 compliance :
     ANNOTATION, ENUM, BRIDGE, VARARGS,
+    STRICT, SYNTHETIC,
 
     // complex instructions
     LOOKUPSWITCH, TABLESWITCH, DEFAULT,
@@ -86,10 +91,10 @@ terminal token
 terminal str_token Str, Word, Insn;
 terminal int_token Int;
 terminal num_token Num;
-terminal signed_num_token Signed;
+terminal relative_num_token Relative;
 
-non terminal str_token classname;
-non terminal var_token optional_default, item;
+non terminal str_token classname, uname, inner_name, inner_inner, inner_outer;
+non terminal var_token optional_default, item, ann_item, ann_defitem;
 
 /* Non terminals */
 non terminal symbol
@@ -102,10 +107,21 @@ non terminal symbol
        statement, statements, stmnt, super_spec, table, table_args, line_expr,
        table_default, table_entry, table_list, throws_expr, var_expr, bytecode_spec,
        debug_extension, enclosing_spec, signature_spec, signature_expr, jasmin_header,
+       debug_list, debug_spec, deprecated_spec, deprecated_expr,
+       generic_attributes, generic_list, generic_spec, generic_expr,
+       field_start, endfield, field_exts, field_ext_list, field_ext_expr,
+       inners, inner_list, inner_spec,
+
+   // used for Annotation attributes :
+       annotations, ann_cls_list, ann_cls_spec, endannotation, ann_cls_expr,
+       ann_clf_expr, ann_met_expr, ann_arglist, ann_arg_list, ann_arg_spec,
+       ann_def_spec, ann_def_val, ann_value_items, ann_value, ann_def_expr,
+       ann_arg_expr, ann_def_items, ann_defval, ann_nest, endannotationsep,
+       ann_value_list, ann_ann_list, ann_ann_value, ann_defval_list,
 
    // used for StackMap attributes :
        defstack, stack_map_frame_desc, endstack, stack_offset_def, stack_items,
-       stack_item, verification_type_info
+       stack_item
 
 ;
 
@@ -115,6 +131,7 @@ non terminal int_token access;
 
 jas_file ::=
         jasmin_header
+        inners
         fields
         methods
     ;
@@ -126,21 +143,38 @@ jasmin_header ::=
     super_spec
     implements
     signature_spec
-    debug_extension
     enclosing_spec
+    deprecated_spec
+    annotations
+    generic_attributes
+    debug_extension
+  {: classFile.endHeader(); :}
 ;
-
 
 // ---- Signature specification
 
 signature_spec ::=
-    DSIGNATURE Str:sig SEP
-        {: classFile.setSignature(sig.str_val); :}
+    DSIGNATURE signature_expr SEP
     |
     /* nothing */
 ;
 
+signature_expr ::= Str:sig
+        {: classFile.setSignature(sig.str_val); :}
+;
 
+
+// ---- Deprecated attribute
+
+deprecated_spec ::=
+    DDEPRECATED deprecated_expr SEP
+    |
+    /* nothing */
+;
+
+deprecated_expr ::=
+    {: classFile.setDeprecated(); :}
+;
 
 // ---- Bytecode version specification
 
@@ -155,7 +189,7 @@ bytecode_spec ::=
 // ---- Source specification
 
 source_spec ::=
-    DSOURCE Word:w SEP
+    DSOURCE uname:w SEP
         {: classFile.setSource(w.str_val); :}
     |
     /* nothing */
@@ -180,10 +214,18 @@ class_spec ::=
   ;
 
 classname ::=
-    Word:w
+    uname:w
         {: RESULT.str_val = ScannerUtils.convertDots(w.str_val); :}
 
   ;
+
+uname ::=
+	Word:w
+	    {: RESULT.str_val = w.str_val; :}
+	|
+	Str:s
+	    {: RESULT.str_val = s.str_val; :}
+	;
 
 access ::=
     {: access_val = 0; :}
@@ -225,6 +267,10 @@ access_item ::=
     BRIDGE       {: access_val |= RuntimeConstants.ACC_BRIDGE; :}
     |
     VARARGS      {: access_val |= RuntimeConstants.ACC_VARARGS; :}
+    |
+    STRICT       {: access_val |= RuntimeConstants.ACC_STRICT; :}
+    |
+    SYNTHETIC    {: access_val |= RuntimeConstants.ACC_SYNTHETIC; :}
   ;
 
 // ---- Superclass specification
@@ -246,34 +292,139 @@ implements_spec ::= DIMPLEMENTS classname:name SEP
 	{: classFile.addInterface(name.str_val); :}
     ;
 
+// ---- Annotation specification
+
+annotations ::= ann_cls_list | /* empty */ ;
+
+ann_cls_list ::= ann_cls_list ann_cls_spec | ann_cls_spec ;
+
+ann_cls_spec ::= ann_cls_expr ann_arglist endannotationsep ;
+
+endannotationsep ::= endannotation SEP ;
+
+endannotation ::= DEND ANNOTATION
+	{: classFile.endAnnotation(); :}
+;
+
+ann_cls_expr ::= DANNOTATION ann_clf_expr ;
+
+ann_clf_expr ::=
+        VISIBLE classname:name SEP
+		{: classFile.addAnnotation(true, name.str_val); :}
+	|
+        INVISIBLE classname:name SEP
+		{: classFile.addAnnotation(false, name.str_val); :}
+;
+ann_met_expr ::=
+	VISIBLE classname:name SEP
+		{: classFile.addAnnotation(true, name.str_val); :}
+	|
+	INVISIBLE classname:name SEP
+		{: classFile.addAnnotation(false, name.str_val); :}
+	|
+	VISIBLEPARAM Int:n classname:name SEP
+		{: classFile.addAnnotation(true, name.str_val, n.int_val); :}
+	|
+	INVISIBLEPARAM Int:n classname:name SEP
+		{: classFile.addAnnotation(false, name.str_val, n.int_val); :}
+;
+
+ann_arglist ::= ann_arg_list | /* empty */ ;
+
+ann_arg_list ::= ann_arg_list ann_arg_spec | ann_arg_spec ;
+
+ann_arg_spec ::= ann_arg_expr EQ ann_value_list ;
+
+ann_arg_expr ::=
+	uname:n Word:dsc
+	{: classFile.addAnnotationField(n.str_val, dsc.str_val, null); :}
+	|
+	uname:n Word:dsc Word:sub
+	{: classFile.addAnnotationField(n.str_val, dsc.str_val, sub.str_val); :}
+;
+
+ann_def_spec ::= DEFAULT SEP
+	{: classFile.addAnnotation(); :}
+;
+
+ann_value_list ::= ann_value_items SEP | ann_ann_list ;
+
+ann_value_items ::= ann_value_items ann_value | ann_value ;
+
+ann_value ::= ann_item:v
+	{: classFile.addAnnotationValue(v.var_val); :}
+;
+ann_item ::=
+    Word:w {: RESULT.var_val = w.str_val; :} // for enum
+    |
+    item:v {: RESULT.var_val = v.var_val; :}
+;
+ann_ann_list ::= ann_ann_list ann_ann_value | ann_ann_value ;
+
+ann_ann_value ::= DANNOTATION ann_nest ann_arglist endannotationsep ;
+
+ann_nest ::= SEP
+	{: classFile.nestAnnotation(); :}
+;
+
+ann_def_val ::= ann_def_expr EQ ann_defval_list ;
+
+ann_def_expr ::=
+	Word:dsc
+	{: classFile.addAnnotationField(null, dsc.str_val, null); :}
+	|
+	Word:dsc Word:sub
+	{: classFile.addAnnotationField(null, dsc.str_val, sub.str_val); :}
+;
+
+ann_defval_list ::= ann_def_items SEP | ann_ann_list ;
+
+ann_def_items ::= ann_def_items ann_defval | ann_defval ;
+
+ann_defval ::= ann_defitem:v
+	{: classFile.addAnnotationValue(v.var_val); :}
+;
+ann_defitem ::=
+    Word:w {: RESULT.var_val = w.str_val; :} // for enum
+    |
+    item:v {: RESULT.var_val = v.var_val; :}
+;
+
 
 // ---- SourceDebugExtension attribute specification
 
-debug_extension ::=
-    DDEBUG Str:s SEP
-        {:
-            classFile.setSourceDebugExtension(s.str_val);
-        :}
-    |
-    /* nothing */
+debug_extension ::= debug_list | /* empty */ ;
+
+debug_list ::= debug_list debug_spec | debug_spec ;
+
+debug_spec ::= DDEBUG Str:s SEP
+        {: classFile.setSourceDebugExtension(s.str_val); :}
   ;
 
 
 // ---- EnclosingMethod attribute specification
 
 enclosing_spec ::=
-    DENCLOSING METHOD Word:w SEP
+    DENCLOSING METHOD uname:w SEP
         {:
             classFile.setEnclosingMethod(w.str_val);
         :}
     |
-    DENCLOSING METHOD Str:s SEP
-        {:
-            classFile.setEnclosingMethod(s.str_val);
-        :}
-    |
     /* nothing */
   ;
+
+
+// ---- Generic attributes specification
+
+generic_attributes ::= generic_list | /* empty */ ;
+
+generic_list ::= generic_list generic_spec | generic_spec ;
+
+generic_spec ::= DATTRIBUTE generic_expr SEP ;
+
+generic_expr ::= uname:name Str:file
+        {: classFile.addGenericAttr(name.str_val, file.str_val); :}
+;
 
 
 // ---- Fields
@@ -283,19 +434,20 @@ fields ::= field_list | /* empty */ ;
 field_list ::= field_list field_spec | field_spec ;
 
 field_spec ::=
-    DFIELD access:a Word:name Word:desc SIGNATURE Str:sig optional_default:v SEP
+    DFIELD access:a uname:name uname:desc SIGNATURE Str:sig optional_default:v SEP
         {:
             classFile.addField((short)a.int_val, name.str_val, desc.str_val,
                                sig.str_val, v.var_val);
         :}
     |
-    DFIELD access:a Word:name Word:desc optional_default:v SEP
+    DFIELD access:a uname:name uname:desc optional_default:v SEP
         {:
             classFile.addField((short)a.int_val, name.str_val, desc.str_val,
                                null, v.var_val);
         :}
+    |
+    DFIELD field_start field_exts endfield
   ;
-
 
 // default value for a field
 optional_default ::=
@@ -303,6 +455,34 @@ optional_default ::=
      |
      /* empty */ {: RESULT.var_val = null; :}
   ;
+
+// multiline form of field description
+field_start ::=
+    access:a uname:name uname:desc optional_default:v SEP
+      {:
+            classFile.beginField((short)a.int_val, name.str_val,
+                                 desc.str_val, v.var_val);
+      :}
+    ;
+
+endfield ::= DEND FIELD SEP
+      {: classFile.endField(); :}
+;
+
+field_exts ::= field_ext_list | /* empty */ ;
+
+field_ext_list ::= field_ext_list field_ext_expr | field_ext_expr ;
+
+field_ext_expr ::=
+   DSIGNATURE signature_expr SEP
+   |
+   DATTRIBUTE generic_expr SEP
+   |
+   DDEPRECATED deprecated_expr SEP
+   |
+   DANNOTATION ann_clf_expr ann_arglist endannotationsep
+;
+
 
 // an item is an integer, a float/double/long, or a quoted string
 item ::=
@@ -312,6 +492,42 @@ item ::=
     |
     Str:s {: RESULT.var_val = s.str_val; :}
   ;
+
+
+// ---- Inner classes
+
+inners ::= inner_list | /* empty */ ;
+
+inner_list ::= inner_list inner_spec | inner_spec ;
+
+inner_spec ::=
+    DINNER CLASS access:a inner_name:n inner_inner:i inner_outer:o SEP
+    {: classFile.addInner((short)a.int_val,
+                          n.str_val, i.str_val, o.str_val); :}
+    |
+    DINNER INTERFACE access:a inner_name:n inner_inner:i inner_outer:o SEP
+    {: classFile.addInner((short)(a.int_val | RuntimeConstants.ACC_INTERFACE),
+                          n.str_val, i.str_val, o.str_val); :}
+;
+
+inner_name ::=
+	uname:w		{: RESULT.str_val = w.str_val; :}
+	|
+	/* empty */	{: RESULT.str_val = null; :}
+;
+
+inner_inner ::=
+	INNER classname:w	{: RESULT.str_val = w.str_val; :}
+	|
+	/* empty */ 		{: RESULT.str_val = null; :}
+;
+
+inner_outer ::=
+	OUTER classname:w	{: RESULT.str_val = w.str_val; :}
+	|
+	/* empty */	{: RESULT.str_val = null; :}
+;
+
 
 // ---- Methods
 
@@ -328,7 +544,7 @@ method_spec ::=
  ;
 
 defmethod ::=
-    DMETHOD access:i Word:name SEP
+    DMETHOD access:i uname:name SEP
         {:
             String split[] = ScannerUtils.splitMethodSignature(name.str_val);
             classFile.newMethod(split[0], split[1], i.int_val);
@@ -379,15 +595,21 @@ stack_map_frame_desc ::=
 stack_offset_def ::=
     OFFSET Int:n SEP
         {: classFile.plantStackOffset(n.int_val); :}
+    |
+    OFFSET Word:w SEP
+        {: classFile.plantStackOffset(w.str_val); :}
+    |
+    /* empty */
+    	{: classFile.plantStackOffset(); :}
 ;
 
 stack_items ::= stack_items stack_item | /* nothing */ ;
 
-stack_item ::= 
+stack_item ::=
     LOCALS Word:w SEP
         {: classFile.plantStackLocals(w.str_val, null); :}
     |
-    LOCALS Word:w Word:val SEP
+    LOCALS Word:w uname:val SEP
         {: classFile.plantStackLocals(w.str_val, val.str_val); :}
     |
     LOCALS Word:w Int:n SEP
@@ -396,7 +618,7 @@ stack_item ::=
     STACK Word:w SEP
         {: classFile.plantStackStack(w.str_val, null); :}
     |
-    STACK Word:w Word:val SEP
+    STACK Word:w uname:val SEP
         {: classFile.plantStackStack(w.str_val, val.str_val); :}
     |
     STACK Word:w Int:n SEP
@@ -437,28 +659,56 @@ directive ::=
     DSET set_expr
     |
     DSIGNATURE signature_expr
+    |
+    DATTRIBUTE generic_expr
+    |
+    DDEPRECATED deprecated_expr
+    |
+    DANNOTATION ann_met_expr ann_arglist endannotation
+    |
+    DANNOTATION ann_def_spec ann_def_val endannotation
   ;
 
 
 //
-// .var <num> is <name> <sig> from StartLab to EndLab
+// .var <num> is <name> <desc> from StartLab to EndLab
+// .var <num> is <name> <desc> signature <sign> from StartLab to EndLab
 //
 var_expr ::=
-    Int:reg IS Word:name Word:sig FROM Word:slab TO Word:elab
+    Int:reg IS uname:name uname:desc SIGNATURE Str:sign FROM Word:slab TO Word:elab
         {:
              classFile.addVar(slab.str_val, elab.str_val, name.str_val,
-                            sig.str_val, reg.int_val);
+                            desc.str_val, sign.str_val, reg.int_val);
         :}
     |
-    Int:reg IS Word:name Word:sig
+    Int:reg IS uname:name uname:desc FROM Word:slab TO Word:elab
         {:
-             classFile.addVar(null, null, name.str_val, sig.str_val, reg.int_val);
+             classFile.addVar(slab.str_val, elab.str_val, name.str_val,
+                            desc.str_val, null, reg.int_val);
         :}
     |
-    Int:reg IS Word:name Word:sig FROM Int:soff TO Int:eoff
+    Int:reg IS uname:name uname:desc SIGNATURE Str:sign
+        {:
+             classFile.addVar(null, null, name.str_val, desc.str_val,
+             		      sign.str_val,  reg.int_val);
+        :}
+    |
+    Int:reg IS uname:name uname:desc
+        {:
+             classFile.addVar(null, null, name.str_val, desc.str_val, null,
+             		      reg.int_val);
+        :}
+    |
+    Int:reg IS uname:name uname:desc SIGNATURE Str:sign FROM Int:soff TO Int:eoff
         {:
              classFile.addVar(soff.int_val, eoff.int_val, name.str_val,
-                            sig.str_val, reg.int_val);
+                            desc.str_val, sign.str_val, reg.int_val);
+        :}
+    |
+    Int:reg IS uname:name uname:desc FROM Int:soff TO Int:eoff
+        {:
+             classFile.addVar(soff.int_val, eoff.int_val, name.str_val,
+                            desc.str_val, null, reg.int_val);
         :}
 ;
 
@@ -531,15 +781,6 @@ set_expr ::=
     Word:name Str:v  {: scanner.dict.put(name.str_val, v); :}
 ;
 
-// .signature <sig>
-signature_expr ::=
-    Str:sig
-        {:
-            classFile.setMethodSignature(sig.str_val);
-        :}
-;
-
-
 instruction ::=
     simple_instruction
     |
@@ -589,7 +830,7 @@ simple_instruction ::=
             classFile.plantString(i.str_val, n.str_val);
         :}
     |
-    Insn:i Signed:n
+    Insn:i Relative:n
         {:
             classFile.plantRelativeGoto(i.str_val, n.int_val);
         :}
@@ -701,6 +942,21 @@ table_default ::=
 
 
 /* --- Revision History ---------------------------------------------------
+--- Iouri Kharon, Dec 29 2005
+    Added .deprecated, .atribute, .inner and .annotation directives
+
+    Added .field <> .end field block
+
+--- Iouri Kharon, Dec 20 2005
+    Added multiple instance of .debug
+
+    Added the signature option in .var declaration
+
+    Added STRICT and SYNTHETIC access flags
+
+    Added 'uname' token - all names/descriptor can be enclosed in quotes
+    for use keywords/instruction as variable names
+
 --- Daniel Reynaud, Oct 22 2005
     Added .enclosing, .debug and .signature directives and the signature
     option in fields declaration

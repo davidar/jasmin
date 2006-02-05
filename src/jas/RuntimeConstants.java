@@ -25,24 +25,24 @@ public interface RuntimeConstants {
     public static final int CONSTANT_NAMEANDTYPE = 12;
 
     // access flags
-    public static final int ACC_PUBLIC = 1;
-    public static final int ACC_PRIVATE = 2;
-    public static final int ACC_PROTECTED = 4;
-    public static final int ACC_STATIC = 8;
-    public static final int ACC_FINAL = 16;
-    public static final int ACC_SYNCHRONIZED = 32;
-    public static final int ACC_VOLATILE = 64;
-    public static final int ACC_TRANSIENT = 128;
-    public static final int ACC_NATIVE = 256;
-    public static final int ACC_INTERFACE = 512;
-    public static final int ACC_ABSTRACT = 1024;
-    public static final int ACC_SUPER = 32;
-
-    public static final int ACC_ANNOTATION = 0x2000; 
-    public static final int ACC_ENUM = 0x4000;
-    public static final int ACC_BRIDGE = 0x0040;
-    public static final int ACC_VARARGS = 0x0080;
-
+    public static final int ACC_PUBLIC       = 0x0001;
+    public static final int ACC_PRIVATE      = 0x0002;
+    public static final int ACC_PROTECTED    = 0x0004;
+    public static final int ACC_STATIC       = 0x0008;
+    public static final int ACC_FINAL        = 0x0010;
+    public static final int ACC_SYNCHRONIZED = 0x0020; // method
+    public static final int ACC_SUPER        = 0x0020; // class(auto)
+    public static final int ACC_VOLATILE     = 0x0040; // field
+    public static final int ACC_BRIDGE       = 0x0040; // method
+    public static final int ACC_TRANSIENT    = 0x0080; // field
+    public static final int ACC_VARARGS      = 0x0080; // method
+    public static final int ACC_NATIVE       = 0x0100;
+    public static final int ACC_INTERFACE    = 0x0200;
+    public static final int ACC_ABSTRACT     = 0x0400;
+    public static final int ACC_STRICT       = 0x0800;
+    public static final int ACC_SYNTHETIC    = 0x1000;
+    public static final int ACC_ANNOTATION   = 0x2000;
+    public static final int ACC_ENUM         = 0x4000;
 
     // types for newarray
     public static final int T_CLASS = 2;
@@ -245,7 +245,7 @@ public interface RuntimeConstants {
     public static final int opc_invokespecial = 183;
     public static final int opc_invokestatic = 184;
     public static final int opc_invokeinterface = 185;
-    public static final int opc_xxxunusedxxx = 186;
+    public static final int opc_invokedynamic = 186;
     public static final int opc_new = 187;
     public static final int opc_newarray = 188;
     public static final int opc_anewarray = 189;
@@ -262,7 +262,6 @@ public interface RuntimeConstants {
     public static final int opc_goto_w = 200;
     public static final int opc_jsr_w = 201;
     public static final int opc_breakpoint = 202;
-
     // for backwards compatibility with 1.0
     public static final int opc_int2byte = opc_i2b;
     public static final int opc_int2char = opc_i2c;
@@ -312,7 +311,7 @@ public interface RuntimeConstants {
         "opc_freturn", "opc_dreturn", "opc_areturn", "opc_return",
         "opc_getstatic", "opc_putstatic", "opc_getfield", "opc_putfield",
         "opc_invokevirtual", "opc_invokespecial", "opc_invokestatic",
-        "opc_invokeinterface", "opc_xxxunusedxxx", "opc_new", "opc_newarray",
+        "opc_invokeinterface", "opc_invokedynamic", "opc_new", "opc_newarray",
         "opc_anewarray", "opc_arraylength", "opc_athrow", "opc_checkcast",
         "opc_instanceof", "opc_monitorenter", "opc_monitorexit", "opc_wide",
         "opc_multianewarray", "opc_ifnull", "opc_ifnonnull", "opc_goto_w",
@@ -329,6 +328,6 @@ public interface RuntimeConstants {
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3,
         3, 3, 3, 3, 3, 3, 3, 3, 2, 99, 99, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3,
-        3, 5, 0, 3, 2, 3, 1, 1, 3, 3, 1, 1, 0, 4, 3, 3, 5, 5, 1
+        3, 5, 3, 3, 2, 3, 1, 1, 3, 3, 1, 1, 0, 4, 3, 3, 5, 5, 1
     };
 }

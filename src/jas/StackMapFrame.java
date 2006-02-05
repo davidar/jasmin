@@ -12,16 +12,21 @@ import java.util.Enumeration;
 
 public class StackMapFrame
 {
-  private Vector<VerificationTypeInfo> stack, locals;
+  private Vector stack, locals;
   private int offset;
+  private Label off_label;
 
   public StackMapFrame()
-  { stack = new Vector<VerificationTypeInfo>();
-    locals = new Vector<VerificationTypeInfo>();
+  { stack = new Vector();
+    locals = new Vector();
   }
 
   public void setOffset(int offset) {
     this.offset = offset;
+  }
+
+  public void setOffset(Label label) {
+    off_label = label;
   }
 
   public void addStackItem(String item, String val) throws jasError {
@@ -32,32 +37,36 @@ public class StackMapFrame
     locals.add(new VerificationTypeInfo(item, val));
   }
 
+  public boolean isEmpty()
+  { return stack.isEmpty() && locals.isEmpty(); }
+
   void resolve(ClassEnv e)
   {
-    Enumeration<VerificationTypeInfo> en = stack.elements();
+    Enumeration en = stack.elements();
     while(en.hasMoreElements())
-      en.nextElement().resolve(e);
+      ((VerificationTypeInfo)en.nextElement()).resolve(e);
 
     en = locals.elements();
     while(en.hasMoreElements())
-      en.nextElement().resolve(e);
+      ((VerificationTypeInfo)en.nextElement()).resolve(e);
   }
 
-  void write(ClassEnv e, DataOutputStream out)
+  void write(ClassEnv e, CodeAttr ce, DataOutputStream out)
     throws IOException, jasError
   {
-    out.writeShort(offset);         // offset
+    if(off_label!=null) off_label.writeOffset(ce, null, out);
+    else out.writeShort(offset);    // offset
     out.writeShort(locals.size());  // number_of_locals
   //  System.out.println("number of local items "+locals.size());
-    Enumeration<VerificationTypeInfo> en = locals.elements();
+    Enumeration en = locals.elements();
     while(en.hasMoreElements())
-      en.nextElement().write(e, out);
+      ((VerificationTypeInfo)en.nextElement()).write(e, ce, out);
 
     out.writeShort(stack.size());  // number_of_stack_items
   //  System.out.println("number of stack items "+stack.size());
     en = stack.elements();
     while(en.hasMoreElements())
-      en.nextElement().write(e, out);
+      ((VerificationTypeInfo)en.nextElement()).write(e, ce, out);
   }
 }
 

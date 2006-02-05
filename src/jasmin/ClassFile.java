@@ -15,10 +15,7 @@ package jasmin;
  */
 
 import jas.*;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -40,7 +37,7 @@ import java.util.*;
  */
 public class ClassFile {
 
-    private final static boolean DEBUG = false;
+    private static final boolean PARSER_DEBUG = false;
 
     // state info for the class being built
     String filename;
@@ -50,21 +47,21 @@ public class ClassFile {
     Scanner scanner;
 
     // state info for the current method being defined
-    String method_name;
-    String method_descriptor;
-    short  method_access;
     ExceptAttr except_attr;
     Catchtable catch_table;
     LocalVarTableAttr var_table;
+    LocalVarTypeTableAttr vtype_table;
     LineTableAttr line_table;
     CodeAttr  code;
-    SignatureAttr method_sig;
+    Method cur_method;
+    Var    cur_field;
     Hashtable labels;
     StackMapAttr stackmap;
     StackMapFrame stackmapframe;
+    Annotation cur_annotation;
 
-    int line_label_count, line_num;
-    boolean auto_number;
+    int line_label_count, line_num, stack_map_label_count;
+    boolean auto_number, class_header;
     Insn buffered_insn;
 
     // state info for lookupswitch and tableswitch instructions
@@ -83,7 +80,7 @@ public class ClassFile {
     // Error reporting method
     //
     void report_error(String msg) {
-        if(DEBUG)
+        if(Main.DEBUG)
             throw new RuntimeException();
 
         // Print out filename/linenumber/message
@@ -133,6 +130,7 @@ public class ClassFile {
         class_name = name;
         class_env.setClass(new ClassCP(name));
         class_env.setClassAccess(acc);
+        class_header = true;
     }
 
     //
@@ -166,7 +164,7 @@ public class ClassFile {
             if(str.indexOf("(") != -1) { // full method description
                 String[] split = ScannerUtils.splitClassMethodSignature(str);
                 class_env.setEnclosingMethod(split[0], split[1], split[2]);
-            } 
+            }
             else                         // just a class name
                 class_env.setEnclosingMethod(str, null, null);
         } catch(IllegalArgumentException e) {
@@ -174,57 +172,195 @@ public class ClassFile {
         }
     }
 
+    // parser diagnostics
+    private static void opened_annotation(String fld) throws jasError
+    { throw new jasError("Skipped .end annotation in " + fld); }
+
+    private static void outside(String dir) throws jasError
+    { throw new jasError("illegal use of " +dir+
+                 " outside of method/field definition or class header"); }
+
+    //
+    // called at end of jasmin-header (resolve class variables)
+    //
+    public void endHeader() throws jasError
+      {
+        if(cur_annotation != null)
+          opened_annotation("class header");
+
+        class_env.endHeader();  // resolve annotations
+        class_header = false;
+      }
 
     //
     // called by the .signature directive
     //
-    void setSignature(String str) {
+    void setSignature(String str) throws jasError
+    {
+      SignatureAttr sig = new SignatureAttr(str);
+      if (cur_method != null) {
+        cur_method.setSignature(sig);
+      } else if(cur_field != null) {
+        cur_field.setSignature(sig);
+      } else if(class_header) {
         class_env.setSignature(str);
+      } else {
+        outside(".signature");
+      }
     }
 
-
     //
-    // called by the .signature directive in a method
+    // called by the .deprecated directive
     //
-    void setMethodSignature(String str) {
-        method_sig = new SignatureAttr(str);
-     // will be resolved by the Method object itself
+    //
+    void setDeprecated() throws jasError
+    {
+      DeprecatedAttr depr = new DeprecatedAttr();
+      if ( cur_method != null ) {
+        cur_method.setDeprecated(depr);
+      } else if(cur_field != null) {
+        cur_field.setDeprecated(depr);
+      } else if(class_header) {
+        class_env.setDeprecated(depr);
+      } else {
+        outside(".deprecated");
+      }
     }
 
+    //
+    // called by the .attribute directive
+    //
+    void addGenericAttr(String name, String file)
+        throws IOException, jasError
+    {
+      GenericAttr gattr = new GenericAttr(name, file);
+      if (cur_method != null) {
+        flushInsnBuffer();
+        if(code != null)  code.addGenericAttr(gattr);
+        else cur_method.addGenericAttr(gattr);
+      } else if(cur_field != null) {
+        cur_field.addGenericAttr(gattr);
+      } else if (class_header) {
+        class_env.addGenericAttr(gattr);
+      } else {
+        outside(".attribute");
+      }
+    }
 
+    //
+    // called by the .inner directive
+    //
+    //
+    public void addInner(short iacc, String name, String inner, String outer)
+    { class_env.addInnerClass(iacc, name, inner, outer); }
+
+    //
+    // procedure group for annotation description
+    //
+    private static void annotation_internal() throws jasError
+    { throw new jasError("logic error in .annotation parsing"); }
+
+    void addAnnotation() throws jasError
+    {
+      if(cur_method == null) Annotation.ParserError();
+      cur_annotation = cur_method.addAnnotation();
+    }
+
+    void addAnnotation(boolean visible, String clname, int paramnum)
+        throws jasError
+    {
+      if(cur_method == null) Annotation.ParserError();
+      cur_annotation = cur_method.addAnnotation(visible, clname, paramnum);
+    }
+
+    void addAnnotation(boolean visible, String clname) throws jasError
+    {
+      if (cur_method != null) {
+        cur_annotation = cur_method.addAnnotation(visible, clname);
+      } else if(cur_field != null) {
+        cur_annotation = cur_field.addAnnotation(visible, clname);
+      } else if (class_header) {
+        cur_annotation = class_env.addAnnotation(visible, clname);
+      } else {
+        outside(".annotation");
+      }
+    }
+
+    void addAnnotationField(String name, String type, String add)
+        throws jasError
+    {
+      if(cur_annotation == null) annotation_internal();
+      cur_annotation.addField(name, type, add);
+    }
+
+    void addAnnotationValue(Object value) throws jasError
+    {
+      if(cur_annotation == null) annotation_internal();
+      cur_annotation.addValue(value);
+    }
+
+    void nestAnnotation() throws jasError
+    {
+      if(cur_annotation == null) annotation_internal();
+      cur_annotation = cur_annotation.nestAnnotation();
+    }
+
+    void endAnnotation() throws jasError
+    {
+      if(cur_annotation == null)
+        throw new jasError(".end annotation without .annotation");
+      cur_annotation = cur_annotation.endAnnotation();
+    }
+
+    // called by the .field directive to begin 'prompted' field
+    //
+    void beginField(short access, String name, String desc, Object value)
+        throws jasError
+    {
+      ConstAttr ca = null;
+
+      if (value != null) {
+        CP cp;
+        // create a constant pool entry for the initial value
+        if (value instanceof Integer) {
+          cp = new IntegerCP(((Integer)value).intValue());
+        } else if (value instanceof Float) {
+          cp = new FloatCP(((Float)value).floatValue());
+        } else if (value instanceof Double) {
+          cp = new DoubleCP(((Double)value).doubleValue());
+        } else if (value instanceof Long) {
+          cp = new LongCP(((Long)value).longValue());
+        } else if (value instanceof String) {
+          cp = new StringCP((String)value);
+        } else {
+          throw new jasError("usupported value type");
+        }
+        ca = new ConstAttr(cp);
+      }
+      cur_field = new Var(access, new AsciiCP(name), new AsciiCP(desc), ca);
+    }
+
+    //
+    // called by the .end field directive to end 'prompted' field
+    //
+    void endField() throws jasError {
+      if (cur_field == null)
+        throw new jasError(".end field without .field");
+
+      if (cur_annotation != null)
+          opened_annotation("field");
+
+      class_env.addField(cur_field);
+      cur_field = null;
+    }
     //
     // called by the .field directive
     //
     void addField(short access, String name, String desc,
-                                String sig, Object value) {
-        if (value == null) {
-            // defining a field which doesn't have an initial value
-
-            class_env.addField(new Var(access, new AsciiCP(name),
-                new AsciiCP(desc), sig, null));
-
-        } else {
-            // defining a field with an initial value...
-
-            // create a constant pool entry for the initial value
-            CP cp = null;
-
-            if (value instanceof Integer) {
-                cp = new IntegerCP(((Integer)value).intValue());
-            } else if (value instanceof Float) {
-                cp = new FloatCP(((Float)value).floatValue());
-            } else if (value instanceof Double) {
-                cp = new DoubleCP(((Double)value).doubleValue());
-            } else if (value instanceof Long) {
-                cp = new LongCP(((Long)value).longValue());
-            } else if (value instanceof String) {
-                cp = new StringCP((String)value);
-            }
-
-            // add the field
-            class_env.addField(new Var(access, new AsciiCP(name),
-                               new AsciiCP(desc), sig, new ConstAttr(cp)));
-        }
+                                String sig, Object value) throws jasError {
+        beginField(access, name, desc, value);
+        if (sig != null) cur_field.setSignature(new SignatureAttr(sig));
+        endField();
     }
 
     //
@@ -233,25 +369,31 @@ public class ClassFile {
     void newMethod(String name, String descriptor, int access) {
         // set method state variables
         labels      = new Hashtable();
-        method_name = name;
         code        = null;
         except_attr = null;
         catch_table = null;
         var_table   = null;
+        vtype_table = null;
         line_table  = null;
-        method_sig  = null;
         line_label_count  = 0;
-        method_descriptor = descriptor;
-        method_access     = (short)access;
-
+        stack_map_label_count = 0;
         stackmap = null;
         stackmapframe = null;
+        cur_method = new Method((short)access, new AsciiCP(name),
+                                new AsciiCP(descriptor));
     }
+
 
     //
     // called by the .end method directive to end the definition for a method
     //
     void endMethod() throws jasError {
+        if (cur_method == null)
+            throw new jasError(".end method without .method");
+
+        if (cur_annotation != null)
+            opened_annotation("method");
+
         if (code != null) {
 
             plantLabel(END_METHOD);
@@ -264,6 +406,9 @@ public class ClassFile {
             if (var_table != null) {
                 code.setLocalVarTable(var_table);
             }
+            if (vtype_table != null) {
+                code.setLocalVarTypeTable(vtype_table);
+            }
             if (line_table != null) {
                 code.setLineTable(line_table);
             }
@@ -271,20 +416,17 @@ public class ClassFile {
                 code.setStackMap(stackmap);
             }
         }
-
-        class_env.addMethod(method_access, method_name, method_descriptor,
-                            method_sig, code, except_attr);
+        cur_method.setCode(code, except_attr);
+        class_env.addMethod(cur_method);
 
         // clear method state variables
+        cur_method  = null;
         code        = null;
         labels      = null;
-        method_name = null;
-        code        = null;
-        except_attr = null;
         catch_table = null;
         line_table  = null;
         var_table   = null;
-        method_sig  = null;
+        vtype_table = null;
         stackmap    = null;
         stackmapframe = null;
     }
@@ -298,6 +440,17 @@ public class ClassFile {
     void plantStackOffset(int n) {
         stackmapframe.setOffset(n);
     }
+
+    void plantStackOffset() throws jasError {
+        String l = "jasmin_reserved_SM:" + (stack_map_label_count++);
+        plantLabel(l);
+        stackmapframe.setOffset(getLabel(l));
+    }
+
+    void plantStackOffset(String label) throws jasError {
+        stackmapframe.setOffset(getLabel(label));
+    }
+
 
 // add a local variable item to the current stack map frame
     void plantStackLocals(String item, String val) {
@@ -321,7 +474,14 @@ public class ClassFile {
     void endStack() {
         if(stackmap==null)
             stackmap = new StackMapAttr();
+
+/* The following check has been removed to give more control over the output
+ *      // no add empty frame (optimize size of classfile)
+ *      if(!stackmapframe.isEmpty()) stackmap.addFrame(stackmapframe);
+ */
+
         stackmap.addFrame(stackmapframe);
+
     }
 
 
@@ -348,11 +508,11 @@ public class ClassFile {
     }
 
     //
-    // used for relative branch targets (ie +5, -12, ...)
+    // used for relative branch targets (ie $+5, $-12, ...)
     //
     void plantRelativeGoto(String name, int val) throws jasError {
         InsnInfo insn = InsnInfo.get(name);
-        if (insn.args.indexOf("offset")>=0) {
+        if (insn.args.equals("label")) {
             bufferInsn(new Insn(insn.opcode, val, true));
         } else {  // forward the request for "normal" instructions
             plant(name, val);
@@ -390,7 +550,7 @@ public class ClassFile {
             bufferInsn(new Insn(insn.opcode, new IntegerCP(val)));
         } else if (insn.args.equals("bigconstant")) {
             bufferInsn(new Insn(insn.opcode, new LongCP(val)));
-        } else if (insn.args.indexOf("offset")>=0) {
+        } else if (insn.args.equals("label")) {
             plant(name, String.valueOf(val));        // the target is not signed
                                                      // assume it is a label
         } else {
@@ -508,7 +668,7 @@ public class ClassFile {
             }
             bufferInsn(new Insn(insn.opcode, atype));
         } else if (insn.args.indexOf("label")>=0) {
-            bufferInsn(new Insn(insn.opcode, getLabel(val)));
+            bufferInsn(new Insn(insn.opcode, getLabel(val), scanner.line_num));
         } else if (insn.args.equals("class")) {
             bufferInsn(new Insn(insn.opcode, new ClassCP(val)));
         } else {
@@ -605,7 +765,7 @@ public class ClassFile {
     };
 
     void newTableswitch(int lowval, int hival) throws jasError {
-        switch_vec = new Vector<LabelOrOffset>();
+        switch_vec = new Vector();
         low_value = lowval;
         high_value = hival;
         autoNumber();
@@ -631,7 +791,7 @@ public class ClassFile {
     void endTableswitch(int defoffset) throws jasError {
         flushInsnBuffer();
         LabelOrOffset labels[] = checkTableswitch();
-        bufferInsn(new TableswitchInsn(low_value, 
+        bufferInsn(new TableswitchInsn(low_value,
              low_value+labels.length-1, new LabelOrOffset(defoffset), labels));
     }
 
@@ -682,7 +842,7 @@ public class ClassFile {
     Label getLabel(String name) throws jasError {
 
         // check that we are inside of a method definition
-        if (method_name == null) {
+        if (cur_method == null) {
             throw new jasError( "illegal use of label outside of method definition");
         }
 
@@ -734,7 +894,7 @@ public class ClassFile {
     // used by the .var directive
     //
     void addVar(String startLab, String endLab,
-                              String name, String sig, int var_num)
+                String name, String desc, String sign, int var_num)
                throws jasError {
         if (startLab == null) {
             startLab = BGN_METHOD;
@@ -751,16 +911,33 @@ public class ClassFile {
             var_table = new LocalVarTableAttr();
         }
 
-        var_table.addEntry(new LocalVarEntry(slab, elab, name, sig, var_num));
+        var_table.addEntry(new LocalVarEntry(slab, elab, name, desc, var_num));
+
+        if (sign != null) {
+            if (vtype_table == null) {
+              vtype_table = new LocalVarTypeTableAttr();
+            }
+
+            vtype_table.addEntry(new LocalVarEntry(slab, elab, name, sign, var_num));
+        }
     }
 
     void addVar(int startOffset, int endOffset, String name,
-                  String sig, int var_num) throws jasError {
+                  String desc, String sign, int var_num) throws jasError {
         if (var_table == null) {
             var_table = new LocalVarTableAttr();
         }
         var_table.addEntry(new LocalVarEntry(startOffset, endOffset,
-                           name, sig, var_num));
+                           name, desc, var_num));
+
+        if (sign != null) {
+            if (vtype_table == null) {
+              vtype_table = new LocalVarTypeTableAttr();
+            }
+
+            vtype_table.addEntry(new LocalVarEntry(startOffset, endOffset,
+                                 name, sign, var_num));
+        }
     }
 
     //
@@ -787,7 +964,7 @@ public class ClassFile {
     void addThrow(String name) throws jasError {
 
         // check that we are inside of a method definition
-        if (method_name == null) {
+        if (cur_method == null) {
             throw new jasError( "illegal use of .throw outside of method definition");
         }
 
@@ -841,7 +1018,7 @@ public class ClassFile {
     private ClassCP checkCatch(String name) throws jasError {
         ClassCP class_cp;
         // check that we are inside of a method definition
-        if (method_name == null) {
+        if (cur_method == null) {
             throw new jasError( "illegal use of .catch outside of method definition");
         }
 
@@ -864,7 +1041,7 @@ public class ClassFile {
     CodeAttr _getCode() throws jasError {
 
         // check that we are inside of a method definition
-        if (method_name == null) {
+        if (cur_method == null) {
             throw new jasError("illegal use of instruction outside of method definition");
         }
 
@@ -878,13 +1055,13 @@ public class ClassFile {
 
 
     // PUBLIC API TO JASMIN:
-	
+
     /** Makes a new ClassFile object, used to represent a Java class file.
       * You can then use readJasmin to read in a class file stored in
       * Jasmin assembly format.
       */
 
-    public ClassFile() { }
+    public ClassFile() {}
 
     /**
       * Parses a Jasmin file, converting it internally into a binary
@@ -904,13 +1081,19 @@ public class ClassFile {
       *        false if you are using the ".line" directive and don't
       *        want Jasmin to help out.
       */
-    public void readJasmin(InputStream input, String name,
+    public void readJasmin(Reader input, String name,
                            boolean numberLines)
                    throws IOException, Exception {
         // initialize variables for error reporting
         errors = 0;
         filename = name;
-	source_name = name;
+        source_name = name;
+
+        //initialize local-frame variables
+        cur_method = null;
+        cur_field = null;
+        cur_annotation = null;
+        class_header = false;
 
         // if numberLines is true, we output LineTableAttr's that indicate what line
         // numbers the Jasmin code falls on.
@@ -919,12 +1102,12 @@ public class ClassFile {
         // Parse the input file
         class_env = new ClassEnv();
 
-	scanner = new Scanner(input);
+        scanner = new Scanner(input);
         parser parse_obj = new parser(this, scanner);
 
-        if (false) {
+        if (PARSER_DEBUG) {
             // for debugging
-            // parse_obj.debug_parse();
+            parse_obj.debug_parse();
         } else {
             parse_obj.parse();
         }
@@ -960,6 +1143,12 @@ public class ClassFile {
 };
 
 /* --- Revision History ---------------------------------------------------
+--- Iouri Kharon, Dec 30 2005
+    Added multiline .field, directive .inner and .anotation
+
+--- Iouri Kharon, Dec 20 2005
+    Added LocalVariableTypeTable support in addVar methods (called by .var)
+
 --- Daniel Reynaud, Oct 22 2005
     Added setSourceDebugExtension() method (called by .debug)
     Added setEnclosingMethod() method (called by .enclosing)
@@ -968,7 +1157,7 @@ public class ClassFile {
     Added setVersion() method (called by .bytecode)
     Changed BGN_METHOD, END_METHOD and line number label to avoid collision
 
---- Jonathan Meyer, April 11 1997 
+--- Jonathan Meyer, April 11 1997
     Fixed bug where source_name was not being set in class_env.
 
 --- Jonathan Meyer, Mar 1 1997

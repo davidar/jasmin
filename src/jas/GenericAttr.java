@@ -18,7 +18,6 @@ public class GenericAttr
 
   /**
    * Make up a new attribute
-   * @param name Name to be associated with the attribute
    * @data stream of bytes to be placed with the attribute
    * @see ClassEnv#addGenericAttr
    * @see CodeAttr#addGenericAttr
@@ -39,6 +38,24 @@ public class GenericAttr
   {
     attr_name = name;
     this.data = data;
+  }
+  /**
+   * Make up a new attribute
+   * @param name Name to be associated with the attribute
+   * @param file name of file with attribute contens
+   */
+  public GenericAttr(String name, String file) throws IOException, jasError
+  {
+    FileInputStream inp;
+    try {
+      inp = new FileInputStream(file);
+    } catch(FileNotFoundException e) {
+      throw new jasError("Generic atribute file " +file+ " not found");
+    }
+    data = new byte[inp.available()];
+    inp.read(data);
+    inp.close();
+    attr_name = new AsciiCP(name);
   }
 
   void resolve(ClassEnv e)

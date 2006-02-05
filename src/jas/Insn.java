@@ -19,7 +19,7 @@ public class Insn implements RuntimeConstants
   int opc;
   InsnOperand operand;
 
-                                // private constructor, for the 
+                                // private constructor, for the
                                 // "strange" opcodes
   Insn() { return; }
   /**
@@ -33,6 +33,13 @@ public class Insn implements RuntimeConstants
       { operand = null; this.opc = opc; return; }
     throw new jasError
       (opcNames[opc] + " cannot be used without more parameters");
+  }
+
+  private void check_short(int val, int opc) throws jasError
+  {
+    if (val > 32767 || val < -32768)
+      throw new jasError
+        (opcNames[opc] + " numeric value exceed size for short");
   }
 
   /**
@@ -69,7 +76,7 @@ public class Insn implements RuntimeConstants
    * opc_fstore:
    * opc_dstore:
    * opc_astore:
-   * 
+   *
    */
 
   /**
@@ -82,9 +89,13 @@ public class Insn implements RuntimeConstants
     this.opc = opc;
     switch (opc)
       {
-      case opc_bipush: 
-          operand = new ByteOperand(val); break;
-      case opc_sipush: 
+      case opc_bipush:
+          if(val > 127 || val < -128)
+            throw new jasError("bipush value exceed size of byte");
+          operand = new ByteOperand(val);
+          break;
+
+      case opc_sipush:
       case opc_goto:
       case opc_if_acmpeq:
       case opc_if_acmpne:
@@ -103,6 +114,7 @@ public class Insn implements RuntimeConstants
       case opc_ifnonnull:
       case opc_ifnull:
       case opc_jsr:
+        check_short(val, opc);
         operand = new OffsetOperand(this, val); break;
 
       case opc_goto_w:
@@ -110,8 +122,11 @@ public class Insn implements RuntimeConstants
         operand = new OffsetOperand(this, val, true); break;
 
       case opc_newarray:
+        if(val < 0 || val > 255)
+            throw new jasError("newarray counter is illegal");
         operand = new UnsignedByteOperand(val);
         break;
+
       case opc_ret:
       case opc_iload:
       case opc_lload:
@@ -125,6 +140,7 @@ public class Insn implements RuntimeConstants
       case opc_astore:
         operand = new UnsignedByteWideOperand(val);
         break;
+
       default:
         throw new jasError
           (opcNames[opc] + " does not take a numeric argument");
@@ -132,7 +148,7 @@ public class Insn implements RuntimeConstants
   }
 
 
-// used for relative offsets (ex : goto +5)
+// used for relative offsets (ex : goto $+5)
 
   public Insn(int opc, int val, boolean relative)
     throws jasError
@@ -158,6 +174,7 @@ public class Insn implements RuntimeConstants
       case opc_ifnonnull:
       case opc_ifnull:
       case opc_jsr:
+        check_short(val, opc);
         operand = new RelativeOffsetOperand(this, val); break;
 
       case opc_goto_w:
@@ -166,7 +183,7 @@ public class Insn implements RuntimeConstants
 
       default:
         throw new jasError
-          (opcNames[opc] + " does not take a signed numeric argument");
+          (opcNames[opc] + " does not take a relative numeric argument");
       }
   }
 
@@ -193,7 +210,7 @@ public class Insn implements RuntimeConstants
    * opc_goto_w,
    * opc_jsr_w
    */
-  public Insn(int opc, Label target)
+  public Insn(int opc, Label target, int line)
     throws jasError
   {
     this.opc = opc;
@@ -217,11 +234,11 @@ public class Insn implements RuntimeConstants
       case opc_ifeq:
       case opc_ifnull:
       case opc_ifnonnull:
-        operand = new LabelOperand(target, this);
+        operand = new LabelOperand(target, this, line);
         break;
       case opc_goto_w:
       case opc_jsr_w:
-        operand = new LabelOperand(target, this, true);
+        operand = new LabelOperand(target, this, true, line);
         break;
       default:
         throw new jasError
@@ -234,6 +251,7 @@ public class Insn implements RuntimeConstants
    * opc_anewarray,
    * opc_ldc_w,
    * opc_ldc2_w,
+   * opc_invokedynamic,
    * opc_invokenonvirtual,
    * opc_invokestatic,
    * opc_invokevirtual,
@@ -253,6 +271,7 @@ public class Insn implements RuntimeConstants
     switch(opc)
       {
       case opc_anewarray:
+      case opc_invokedynamic:
       case opc_invokenonvirtual:
       case opc_invokestatic:
       case opc_invokevirtual:
@@ -304,6 +323,6 @@ public class Insn implements RuntimeConstants
   }
 
   public String toString() {
-    return "instruction "+opc+" "+((operand!=null)?operand:"");
+    return "instruction "+opc+" "+((operand!=null)?operand.toString():"");
   }
 }
