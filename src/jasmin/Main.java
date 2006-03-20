@@ -19,7 +19,7 @@ public class Main {
     /**
      * The Jasmin version
      */
-    public static final String version = "v2.1";
+    public static final String version = "v2.2";
     public static final boolean DEBUG = false;
 
     /* Path for place generated files */
@@ -60,9 +60,11 @@ public class Main {
      */
     public static void assemble(String fname)
     {
-        File file = new File(fname);
         File out_file = null;
+        FileOutputStream outp = null;
+        File file = new File(fname);
         ClassFile classFile = new ClassFile();
+        String iocause = fname + ": file not found";
 
         try {
             BufferedReader inp;
@@ -101,6 +103,7 @@ public class Main {
                     dest_dir = class_dir;
                 }
             }
+            iocause = class_name + ".class: file can't be created";
             if (dest_dir == null) {
                 out_file = new File(class_name + ".class");
             } else {
@@ -118,16 +121,17 @@ public class Main {
                 }
             }
 
-            FileOutputStream outp = new FileOutputStream(out_file);
+            outp = new FileOutputStream(out_file);
             classFile.write(outp);
             outp.close();
+            outp = null; // as marker
             System.out.println("Generated: " + out_file.getPath());
 
         } catch (java.io.FileNotFoundException e) {
-            System.err.println(fname + ": file not found");
+            System.err.println(iocause);
             System.exit(-1);
         } catch (jasError e) {
-            classFile.report_error("JAS Error " + e.getMessage());
+            classFile.report_error("JAS Error: " + e.getMessage(), e.numTag);
         } catch (Exception e) {
             if(DEBUG)
                 e.printStackTrace();
@@ -138,6 +142,12 @@ public class Main {
         if (classFile.errorCount() > 0) {
             System.err.println(fname + ": Found "
                                + classFile.errorCount() + " errors");
+            if (outp != null) {
+                try {
+                  outp.close();
+                  out_file.delete();
+                } catch(Exception e) {}
+            }
         }
     }
 
@@ -165,7 +175,7 @@ public class Main {
                 System.exit(0);
             }
             if (args[i].equals("-g")) {
-              generate_linenum = true;
+                generate_linenum = true;
             } else if (args[i].equals("-d")) {
                 if (++i >= args.length) unarg_option("-d");
                 if (dest_path != null) duplicate_option("-d");
@@ -186,6 +196,7 @@ public class Main {
 };
 
 /* --- Revision History ---------------------------------------------------
+--- Iouri Kharon, Feb 17 2006, correct some IO diagnostics
 --- Jonathan Meyer, Mar 1 1997 tidied error reporting, renamed Jasmin->ClassFile
 --- Jonathan Meyer, Feb 8 1997 added the assemble() method
 --- Jonathan Meyer, July 24 1996 added -version flag.

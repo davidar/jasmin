@@ -91,7 +91,7 @@ public class Insn implements RuntimeConstants
       {
       case opc_bipush:
           if(val > 127 || val < -128)
-            throw new jasError("bipush value exceed size of byte");
+            throw new jasError("bipush value exceed size of byte", true);
           operand = new ByteOperand(val);
           break;
 
@@ -123,7 +123,7 @@ public class Insn implements RuntimeConstants
 
       case opc_newarray:
         if(val < 0 || val > 255)
-            throw new jasError("newarray counter is illegal");
+            throw new jasError("newarray counter is illegal", true);
         operand = new UnsignedByteOperand(val);
         break;
 

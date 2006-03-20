@@ -9,6 +9,8 @@ package jas;
 
 public class jasError extends Exception
 {
-  public jasError() { super(); }
-  public jasError(String s) { super(s); }
+  public boolean numTag;
+  public jasError() { super(); numTag = false; }
+  public jasError(String s) { super(s);  numTag = false; }
+  public jasError(String s, boolean isNum) { super(s); numTag = true; }
 }

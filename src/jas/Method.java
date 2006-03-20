@@ -82,7 +82,7 @@ public class Method
     throws jasError
   {
     if(paramnum <= 0 || paramnum >= 256)
-      throw new jasError("annotation parameter number can be in range 1-256");
+      throw new jasError("annotation parameter number can be in range 1-256", true);
     Annotation ann = new Annotation(clsname);
     AnnotParamAttr aa = visible ? annParamVis : annParamInvis;
     if(aa == null) {

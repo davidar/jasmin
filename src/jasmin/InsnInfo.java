@@ -25,11 +25,11 @@ class InsnInfo {
     public String args;     // the argument code
 
     public static InsnInfo get(String name) {
-	return (InsnInfo)infoTable.get(name);	
+	return (InsnInfo)infoTable.get(name);
     }
 
     public static boolean contains(String name) {
-	return infoTable.get(name) != null;	
+	return infoTable.get(name) != null;
     }
 
     //
@@ -218,7 +218,7 @@ class InsnInfo {
         addInfo("lconst_0", RuntimeConstants.opc_lconst_0, "");
         addInfo("lconst_1", RuntimeConstants.opc_lconst_1, "");
         addInfo("ldc", RuntimeConstants.opc_ldc, "constant");
-        addInfo("ldc_w", RuntimeConstants.opc_ldc, "constant");
+        addInfo("ldc_w", RuntimeConstants.opc_ldc_w, "constant");
         addInfo("ldc2_w", RuntimeConstants.opc_ldc2_w, "bigconstant");
         addInfo("ldiv", RuntimeConstants.opc_ldiv, "");
         addInfo("lload", RuntimeConstants.opc_lload, "i");
@@ -268,6 +268,8 @@ class InsnInfo {
 };
 
 /* --- Revision History ---------------------------------------------------
+--- Iouri Kharon, Mar 14 2006
+    Change: 'ldc_w' is NOT synonym for 'ldc'
 --- Iouri Kharon, Dec 23 2005
     Added invokedynamic
     Change: 'jsr_w' is NOT synonym for 'jsr'

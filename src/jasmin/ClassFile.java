@@ -56,8 +56,8 @@ public class ClassFile {
     Method cur_method;
     Var    cur_field;
     Hashtable labels;
-    StackMapAttr stackmap;
-    StackMapFrame stackmapframe;
+    StackMap stackmap;
+    VerifyFrame verifyframe;
     Annotation cur_annotation;
 
     int line_label_count, line_num, stack_map_label_count;
@@ -79,29 +79,47 @@ public class ClassFile {
     //
     // Error reporting method
     //
-    void report_error(String msg) {
+    void report_error(String msg) { report_error(msg, false); }
+
+    void report_error(String msg, boolean BadIntVal) {
         if(Main.DEBUG)
             throw new RuntimeException();
 
+        errors++;
+
         // Print out filename/linenumber/message
         System.err.print(filename + ":");
-        System.err.print(scanner.line_num);
-        System.err.println(": " + msg + ".");
-        if (scanner.char_num >= 0) {
-            System.err.println(scanner.line.toString());
+        if (scanner == null)
+            System.err.println(" " + msg + ".");
+        else {
+            String dia_line;
+            int    dia_linnum, dia_charpos;
 
-            // Print out where on the line the scanner got to
-            int i;
-            for (i = 0; i < scanner.char_num; i++) {
-                if (scanner.line.charAt(i) == '\t') {
-                    System.err.print("\t");
-                } else {
-                    System.err.print(" ");
-                }
+            if (BadIntVal && scanner.char_num >= 0) {
+              dia_line    = scanner.int_line;
+              dia_linnum  = scanner.int_line_num;
+              dia_charpos = scanner.int_char_num;
+            } else {
+              dia_line    = scanner.line.toString();
+              dia_linnum  = scanner.line_num;
+              dia_charpos = scanner.char_num;
             }
-            System.err.println("^");
+            System.err.println(dia_linnum + ": " + msg + ".");
+            if (scanner.char_num >= 0) {
+                System.err.println(dia_line);
+
+                // Print out where on the line the scanner got to
+                int i;
+                for (i = 0; i < dia_charpos; i++) {
+                    if (dia_line.charAt(i) == '\t') {
+                        System.err.print("\t");
+                    } else {
+                        System.err.print(" ");
+                    }
+                }
+                System.err.println("^");
+            }
         }
-        errors++;
     }
 
     //
@@ -118,9 +136,9 @@ public class ClassFile {
         String str = version.toString();
         int idx = str.indexOf(".");
         if(!(version instanceof Float) || (idx == -1))
-            report_error("invalid bytecode version number : "+str);
+            report_error("invalid bytecode version number : " + str);
         class_env.setVersion(Short.parseShort(str.substring(0,idx)),
-                          Short.parseShort(str.substring(idx+1,str.length())));
+                             Short.parseShort(str.substring(idx+1,str.length())));
     }
 
     //
@@ -378,7 +396,7 @@ public class ClassFile {
         line_label_count  = 0;
         stack_map_label_count = 0;
         stackmap = null;
-        stackmapframe = null;
+        verifyframe = null;
         cur_method = new Method((short)access, new AsciiCP(name),
                                 new AsciiCP(descriptor));
     }
@@ -428,34 +446,55 @@ public class ClassFile {
         var_table   = null;
         vtype_table = null;
         stackmap    = null;
-        stackmapframe = null;
+        verifyframe = null;
     }
 
-// define a new stack map frame
-    void beginStack() {
-        stackmapframe = new StackMapFrame();
+// get last stackmap locals vector
+    private Vector prevStack(int count) throws jasError {
+        Vector prev = null;
+        if(stackmap != null)
+            prev = stackmap.getLastFrame(count);
+        return prev;
+    }
+
+// define a new stack map frame (possible with copy previous)
+    void beginStack(boolean copy) throws jasError {
+        Vector prev = null;
+        if(copy)
+            prev = prevStack(0);
+        verifyframe = new VerifyFrame(prev);
+    }
+
+// define a new stack map frame and copy 'n' previous
+// (type-independet) elements
+    void beginStack(int n) throws jasError {
+        if(n <= 0)
+            throw new jasError("Invalid counter", true);
+        verifyframe = new VerifyFrame(prevStack(n));
     }
 
 // define the offset of the current stack map frame
     void plantStackOffset(int n) {
-        stackmapframe.setOffset(n);
-    }
-
-    void plantStackOffset() throws jasError {
-        String l = "jasmin_reserved_SM:" + (stack_map_label_count++);
-        plantLabel(l);
-        stackmapframe.setOffset(getLabel(l));
+        try {
+            verifyframe.setOffset(n);
+        } catch(jasError e) {
+            report_error(e.toString());
+        }
     }
 
     void plantStackOffset(String label) throws jasError {
-        stackmapframe.setOffset(getLabel(label));
+        Label l = getLabel(label);
+        try {
+            verifyframe.setOffset(l);
+        } catch(jasError e) {
+            report_error(e.toString());
+        }
     }
-
 
 // add a local variable item to the current stack map frame
     void plantStackLocals(String item, String val) {
         try {
-            stackmapframe.addLocalsItem(item, val);
+            verifyframe.addLocalsItem(item, val);
         } catch(jasError e) {
             report_error(e.toString());
         }
@@ -464,7 +503,7 @@ public class ClassFile {
 // add a stack item element to the current stack map frame
     void plantStackStack(String item, String val) {
         try {
-            stackmapframe.addStackItem(item, val);
+            verifyframe.addStackItem(item, val);
         } catch(jasError e) {
             report_error(e.toString());
         }
@@ -472,16 +511,20 @@ public class ClassFile {
 
 // add the current stack map frame to the current stack map attribute
     void endStack() {
+        if(!verifyframe.haveOffset()) {
+            String l = "jasmin_reserved_SM:" + (stack_map_label_count++);
+            try {
+                plantLabel(l);
+                verifyframe.setOffset(getLabel(l));
+            } catch(jasError e) {
+                report_error(e.toString());
+            }
+        }
         if(stackmap==null)
-            stackmap = new StackMapAttr();
+            stackmap = new StackMap(class_env);
 
-/* The following check has been removed to give more control over the output
- *      // no add empty frame (optimize size of classfile)
- *      if(!stackmapframe.isEmpty()) stackmap.addFrame(stackmapframe);
- */
-
-        stackmap.addFrame(stackmapframe);
-
+        stackmap.addFrame(verifyframe);
+        verifyframe = null; // PARANOYA
     }
 
 
@@ -993,20 +1036,24 @@ public class ClassFile {
         catch_table.addEntry(start_off, end_off, branch_off, class_cp);
     }
 
-
+    short checkLimit(int v) throws jasError {
+        if(v < 0 || v > 65535)
+            throw new jasError("Illegal limit value", true);
+        return (short)v;
+    }
 
     //
     // used by the .limit stack directive
     //
-    void setStackSize(short v) throws jasError {
-        _getCode().setStackSize(v);
+    void setStackSize(int v) throws jasError {
+        _getCode().setStackSize(checkLimit(v));
     }
 
     //
     // used by the .limit vars directive
     //
-    void setVarSize(short v) throws jasError {
-        _getCode().setVarSize(v);
+    void setVarSize(int v) throws jasError {
+        _getCode().setVarSize(checkLimit(v));
     }
 
     // --- Private stuff ---
@@ -1143,6 +1190,9 @@ public class ClassFile {
 };
 
 /* --- Revision History ---------------------------------------------------
+--- Iouri Kharon, Feb 17 2006
+    Added extended syntax for .stack
+
 --- Iouri Kharon, Dec 30 2005
     Added multiline .field, directive .inner and .anotation
 

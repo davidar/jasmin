@@ -113,7 +113,7 @@ public class AnnotationElement
               break;
           }
           if(badval)
-            throw new jasError("annotation field value exceed range of type");
+            throw new jasError("annotation field value exceed range of type", true);
           cp = new IntegerCP(val);
         }
         break;

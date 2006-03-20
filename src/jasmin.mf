@@ -1,1 +1,4 @@
+Manifest-Version: 1.0
+Implementation-Title: Java Runtime Environment
+Implementation-Version: 2.2
 Main-Class: jasmin.Main

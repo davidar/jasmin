@@ -62,6 +62,7 @@ abstract class ReservedWords {
         reserved_words.put("stack", new token(sym.STACK));
         reserved_words.put("offset", new token(sym.OFFSET));
         reserved_words.put("locals", new token(sym.LOCALS));
+        reserved_words.put("use", new token(sym.USE));
         reserved_words.put("inner", new token(sym.INNER));
         reserved_words.put("outer", new token(sym.OUTER));
         reserved_words.put("class", new token(sym.CLASS));

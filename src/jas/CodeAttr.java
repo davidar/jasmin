@@ -23,7 +23,7 @@ public class CodeAttr
   LineTableAttr ltab;
   LocalVarTableAttr lvar;
   LocalVarTypeTableAttr lvtyp;
-  StackMapAttr stackmap;
+  StackMap stackmap;
   Vector generic;
 
   /**
@@ -74,9 +74,8 @@ public class CodeAttr
   /**
    * Set the StackMap attribute for this method
    */
-  public void setStackMap(StackMapAttr s) {
-    stackmap = s;
-  }
+  public void setStackMap(StackMap s)
+  { stackmap = s; }
 
   /**
    * Add a generic attribute to the method. A generic attribute
@@ -98,6 +97,7 @@ public class CodeAttr
 
   public void setStackSize(short stack_size)
   { this.stack_size = stack_size; }
+
   public void setVarSize(short num_vars)
   { num_locals = num_vars; }
 
@@ -120,13 +120,12 @@ public class CodeAttr
     if (stackmap != null) stackmap.resolve(e);
     for (Enumeration gen = generic.elements(); gen.hasMoreElements();)
       {
-	GenericAttr gattr = (GenericAttr)gen.nextElement();
-	gattr.resolve(e);
+        GenericAttr gattr = (GenericAttr)gen.nextElement();
+        gattr.resolve(e);
       }
   }
 
-  int getPc(Insn i)
-     throws jasError
+  int getPc(Insn i) throws jasError
   {
     if (insn_pc == null)
       throw new jasError("Internal error, insn_pc has not been initialized");
@@ -170,8 +169,8 @@ public class CodeAttr
     if (stackmap != null) total_size += stackmap.size(e, this);
     for (Enumeration gen = generic.elements(); gen.hasMoreElements();)
       {
-	GenericAttr gattr = (GenericAttr)(gen.nextElement());
-	total_size += gattr.size();
+        GenericAttr gattr = (GenericAttr)(gen.nextElement());
+        total_size += gattr.size();
       }
 
                                 // extra headers
@@ -209,8 +208,8 @@ public class CodeAttr
       { stackmap.write(e, this, out); }
     for (Enumeration gen = generic.elements(); gen.hasMoreElements();)
       {
-	GenericAttr gattr = (GenericAttr)gen.nextElement();
-	gattr.write(e, out);
+        GenericAttr gattr = (GenericAttr)gen.nextElement();
+        gattr.write(e, out);
       }
   }
 

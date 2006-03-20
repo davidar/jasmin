@@ -35,26 +35,26 @@ public class VerificationTypeInfo
     else if(item.equals("UninitializedThis"))
         tag = 6;
     else if(item.equals("Object")) {
-        tag = 7;
         if(val==null) throw new jasError("Object requires a class name");
         cls = new ClassCP(val);
+        tag = 7;
     }
     else if(item.equals("Uninitialized")) {
         if(val==null)
             throw new jasError("Uninitialized requires an integer or label");
-        tag = 8;
         try {
             index = Integer.parseInt(val);
         } catch(Exception e) {
             un_label = new Label(val);
         }
+        tag = 8;
     }
-    else throw new jasError("Unknown item object : "+item);
+    else throw new jasError("Unknown item verification type : "+item);
   }
 
   void resolve(ClassEnv e)
   {
-    if(cls!=null) {
+    if(tag == 7) {
       cls.resolve(e);
       e.addCPItem(cls);
     }
@@ -64,11 +64,10 @@ public class VerificationTypeInfo
     throws IOException, jasError
   {
     out.writeByte(tag);
-    if(cls!=null)
+    if(tag == 7)
       out.writeShort(e.getCPIndex(cls));
-
+    else if(tag == 8) { // Uninitialized
 // the following is not fully compliant to the CLDC spec !
-    if(tag==8) { // Uninitialized
       if(un_label != null)
         un_label.writeOffset(ce, null, out);
       else {
@@ -79,5 +78,25 @@ public class VerificationTypeInfo
       }
     }
   }
-}
 
+// next methods used for StackMapFrame attribute (jdk1.6)
+  private int getOffset(CodeAttr ce) throws jasError
+  {
+    if(un_label != null)
+        return un_label.getOffset(ce);
+    return index;
+  }
+
+  boolean isEqual(ClassEnv e, CodeAttr ce, VerificationTypeInfo cmp)
+  throws jasError
+  {
+    if(tag != cmp.tag)
+        return false;
+
+    if(tag == 7)
+        return e.getCPIndex(cls) == e.getCPIndex(cmp.cls);
+    if(tag == 8)
+        return getOffset(ce) == cmp.getOffset(ce);
+    return true;
+  }
+}

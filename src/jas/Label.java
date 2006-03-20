@@ -5,7 +5,7 @@
  * identified globally through a String label that is associated
  * with them when they are created.
  * @author $Author: jonmeyerny $
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 
 package jas;
@@ -48,6 +48,7 @@ public class Label extends Insn implements RuntimeConstants
     short offset = (short) (pc - tpc);
     out.writeShort(offset);
   }
+
   void writeWideOffset(CodeAttr ce, Insn source, DataOutputStream out)
      throws IOException, jasError
   {
@@ -59,9 +60,14 @@ public class Label extends Insn implements RuntimeConstants
       tpc = ce.getPc(source);
     out.writeInt(pc - tpc);
   }
+
   public String toString()
   {
     return ("Label: " + id);
   }
+
+// method for StackMapFrame attribute (jdk1.6)
+  int getOffset(CodeAttr ce) throws jasError
+    { return (short)ce.getPc(this); }
 }
 
