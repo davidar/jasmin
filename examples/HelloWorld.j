@@ -5,7 +5,7 @@
 ; -------------------------------------------------------------------------
 
 
-.class public NoJad.j
+.class public HelloWorld
 .super java/lang/Object
 
 ;
