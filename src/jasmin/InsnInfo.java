@@ -17,7 +17,7 @@ import java.util.Hashtable;
 
 class InsnInfo {
     // maps instruction name -> InsnInfo object
-    static Hashtable infoTable;
+    private static Hashtable infoTable;
 
     // information maintained about each instruction:
     public String name;     // instruction name

@@ -37,15 +37,20 @@ abstract class ScannerUtils {
             return (convertInt(str.substring(2), 16));
         } else if (str.indexOf('.') != -1) {
             // make a double
-            double x = (new Double(str)).doubleValue();
+            Double dc = new Double(str);
+            // if number have suffix 'd' force double value
+            // thanks to JD Brennan
+            if(!str.endsWith("d")) {
+                double x = dc.doubleValue();
 
-            // see if it will fit into a float...
-            if (x <= (double)Float.MAX_VALUE && x >= (float)Float.MIN_VALUE) {
-                // bug fix here thanks to Peter Chubb (replaced int->float)
-                return new Float((float)x);
+                // see if it will fit into a float...
+                if (x <= (double)Float.MAX_VALUE && x >= (float)Float.MIN_VALUE) {
+                    // bug fix here thanks to Peter Chubb (replaced int->float)
+                    return new Float((float)x);
+                }
+                // if not, return a double
             }
-            // if not, return a double
-            return new Double(x);
+            return dc;
         } else {
             // assume long or int in base 10
             return (convertInt(str, 10));
@@ -144,3 +149,8 @@ abstract class ScannerUtils {
         return result;
     }
 }
+
+/* --- Revision History ---------------------------------------------------
+--- Iouri Kharon, May 07 2010
+    'd' in real constant, force double mode.
+*/

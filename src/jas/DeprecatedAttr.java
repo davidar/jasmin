@@ -10,7 +10,7 @@ import java.io.*;
 
 public class DeprecatedAttr
 {
-  static CP attr = new AsciiCP("Deprecated");
+  static final CP attr = new AsciiCP("Deprecated");
 
   /**
    * Create a deprecated attribute.

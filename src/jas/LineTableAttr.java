@@ -13,7 +13,7 @@ import java.util.*;
 
 public class LineTableAttr
 {
-  static CP attr = new AsciiCP("LineNumberTable");
+  static final CP attr = new AsciiCP("LineNumberTable");
 
   Vector line, pc;
 
@@ -28,7 +28,7 @@ public class LineTableAttr
 
   /**
    * Add a pc to line number entry to the line table.
-   * @param Label to the location in the class file
+   * @param l to the location in the class file
    * @param line Corresponding line number in the source file
    */
 

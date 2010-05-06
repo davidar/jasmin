@@ -13,7 +13,7 @@ import java.util.Enumeration;
 
 public class AnnotDefAttr
 {
-  static CP attr = new AsciiCP("AnnotationDefault");
+  static final CP attr = new AsciiCP("AnnotationDefault");
   Annotation ann;
 
   public AnnotDefAttr()

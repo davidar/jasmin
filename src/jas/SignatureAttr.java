@@ -11,7 +11,7 @@ import java.io.*;
 
 public class SignatureAttr
 {
-  static CP attr = new AsciiCP("Signature");
+  static final CP attr = new AsciiCP("Signature");
 
   CP signature;
 
@@ -26,7 +26,7 @@ public class SignatureAttr
 
   /**
    * Create a signature attribute, with more control over attribute name
-   * @param cp CP to be associated as the signature or the attribute
+   * @param signature CP to be associated as the signature or the attribute
    * @see ClassEnv#setSignature
    */
   public SignatureAttr(CP signature)

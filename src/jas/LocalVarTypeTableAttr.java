@@ -13,7 +13,7 @@ import java.util.*;
 
 public class LocalVarTypeTableAttr
 {
-  static CP attr = new AsciiCP("LocalVariableTypeTable");
+  static final CP attr = new AsciiCP("LocalVariableTypeTable");
 
   Vector vars;
 
@@ -29,7 +29,7 @@ public class LocalVarTypeTableAttr
 
   /**
    * Add a LocalVar Entry to the attribute
-   * @param entry Local variable Entry to be added to the table
+   * @param e Local variable Entry to be added to the table
    */
 
   public void addEntry(LocalVarEntry e)

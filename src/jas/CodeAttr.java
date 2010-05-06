@@ -14,7 +14,7 @@ import java.util.*;
 
 public class CodeAttr
 {
-  static CP attr = new AsciiCP("Code");
+  static final CP attr = new AsciiCP("Code");
   short stack_size, num_locals;
   int code_size;
   Vector insns;

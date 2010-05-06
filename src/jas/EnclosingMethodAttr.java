@@ -10,7 +10,7 @@ import java.io.*;
 
 public class EnclosingMethodAttr
 {
-  static CP attr = new AsciiCP("EnclosingMethod");
+  static final CP attr = new AsciiCP("EnclosingMethod");
   CP clscp,
      ntcp;
 

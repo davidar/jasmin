@@ -9,6 +9,7 @@ package jasmin;
 
 import java.io.*;
 import jas.jasError;
+import jas.StackMap;
 
 /**
  * Main is the main entry point for Jasmin - it supplies the main()
@@ -19,17 +20,17 @@ public class Main {
     /**
      * The Jasmin version
      */
-    public static final String version = "v2.3";
+    public static final String version = "v2.4";
     public static final boolean DEBUG = false;
 
     /* Path for place generated files */
-    private static String dest_path = null;
+    private String dest_path = null;
 
     /* Codepage for input files */
-    private static String encoding = null;
+    private String encoding = null;
 
     /* Autogenerate linenumbers */
-    private static boolean generate_linenum = false;
+    private boolean generate_linenum = false;
 
     /* Commandline syntax (help) */
     private static final String help1 =
@@ -58,7 +59,7 @@ public class Main {
      * Called to assemble a single file.
      * @param fname is the name of the file containing the Jasmin source code.
      */
-    public static void assemble(String fname)
+    public final void assemble(String fname)
     {
         File out_file = null;
         FileOutputStream outp = null;
@@ -153,6 +154,11 @@ public class Main {
 
     public static void main(String args[])
     {
+        new Main().run(args);
+    }
+
+    public final void run(String args[])
+    {
         int i;
 
         String files[] = new String[args.length];
@@ -190,12 +196,14 @@ public class Main {
         }
 
         for (i = 0; i < num_files; i++) {
+            StackMap.reinit();
             assemble(files[i]);
         }
     }
 };
 
 /* --- Revision History ---------------------------------------------------
+--- Iouri Kharon, May 07 2010, redesing for dynamic class creation
 --- Iouri Kharon, Feb 17 2006, correct some IO diagnostics
 --- Jonathan Meyer, Mar 1 1997 tidied error reporting, renamed Jasmin->ClassFile
 --- Jonathan Meyer, Feb 8 1997 added the assemble() method

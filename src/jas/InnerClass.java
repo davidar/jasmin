@@ -17,7 +17,7 @@ public class InnerClass
 
   /**
    * Make up a new attribute
-   * @see ClassEnv#addInnerAttr
+   * @see ClassEnv#addInnerClass
    */
   public InnerClass(short access, String name, String inner, String outer)
   {

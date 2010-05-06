@@ -1,4 +1,4 @@
 Manifest-Version: 1.0
 Implementation-Title: Java Runtime Environment
-Implementation-Version: 2.3
+Implementation-Version: 2.4
 Main-Class: jasmin.Main

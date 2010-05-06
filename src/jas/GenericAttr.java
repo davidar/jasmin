@@ -18,7 +18,7 @@ public class GenericAttr
 
   /**
    * Make up a new attribute
-   * @data stream of bytes to be placed with the attribute
+   * @param data stream of bytes to be placed with the attribute
    * @see ClassEnv#addGenericAttr
    * @see CodeAttr#addGenericAttr
    */
@@ -30,7 +30,7 @@ public class GenericAttr
   /**
    * Make up a new attribute
    * @param name CP to be defined as the name of the attribute
-   * @data stream of bytes to be placed with the attribute
+   * @param data stream of bytes to be placed with the attribute
    * @see ClassEnv#addGenericAttr
    * @see CodeAttr#addGenericAttr
    */

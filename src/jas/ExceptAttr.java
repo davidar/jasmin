@@ -14,13 +14,13 @@ import java.util.*;
 
 public class ExceptAttr
 {
-  static CP attr = new AsciiCP("Exceptions");
+  static final CP attr = new AsciiCP("Exceptions");
 
   Vector cps;
 
   public ExceptAttr() { cps = new Vector(); }
   /**
-   * @param clazz Exception class to be added to attribute. This is
+   * @param cp Exception class to be added to attribute. This is
    * typically a ClassCP
    */
   public void addException(CP cp)

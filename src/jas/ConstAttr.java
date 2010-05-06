@@ -12,7 +12,7 @@ import java.io.*;
 
 public class ConstAttr
 {
-  static CP attr = new AsciiCP("ConstantValue");
+  static final CP attr = new AsciiCP("ConstantValue");
   CP val;
 
   /**

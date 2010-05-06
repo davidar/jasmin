@@ -10,13 +10,13 @@ import java.io.*;
 
 public class SourceDebugExtensionAttr
 {
-  static CP attr = new AsciiCP("SourceDebugExtension");
+  static final CP attr = new AsciiCP("SourceDebugExtension");
 
   String debug;
 
   /**
    * Create a source file attribute.
-   * @param name Name of the source file
+   * @param debug Name of the source file
    * @see ClassEnv#setSource
    */
 

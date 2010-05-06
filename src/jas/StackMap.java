@@ -21,6 +21,10 @@ public class StackMap
 
   protected Vector frames;
 
+  public static void reinit()
+  { attr = null;
+    java6 = false; }
+
   protected StackMap(CP attr)
   { this.attr = attr;
     frames = new Vector(); }
@@ -122,3 +126,7 @@ public class StackMap
     }while((g /= 2) > 0);
   }
 }
+
+/* --- Revision History ---------------------------------------------------
+--- Iouri Kharon, May 07 2010, reset java6-mode for new compiled file
+*/

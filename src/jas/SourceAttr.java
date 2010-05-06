@@ -11,7 +11,7 @@ import java.io.*;
 
 public class SourceAttr
 {
-  static CP attr = new AsciiCP("SourceFile");
+  static final CP attr = new AsciiCP("SourceFile");
 
   CP name;
 
@@ -26,7 +26,7 @@ public class SourceAttr
 
   /**
    * Create a source file attribute, with more control over attribute name
-   * @param cp CP to be associated as the name of the source file
+   * @param name CP to be associated as the name of the source file
    * @see ClassEnv#setSource
    */
   public SourceAttr(CP name)

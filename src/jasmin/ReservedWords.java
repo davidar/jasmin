@@ -10,7 +10,7 @@ import java.util.Hashtable;
 import java_cup.runtime.*;
 
 abstract class ReservedWords {
-    static Hashtable reserved_words;
+    private static Hashtable reserved_words;
 
     public static token get(String name) {
     	return (token)reserved_words.get(name);

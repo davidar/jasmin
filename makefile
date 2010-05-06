@@ -116,7 +116,7 @@ CUP = src/java_cup/Main.java \
 
 jasmin.jar : $(SRC)
     @if not exist out\nul mkdir out
-    @$(JDK)javac -source 1.2 -target 1.1 -d out -cp src src/Jasmin.java
+    @$(JDK)javac -extdirs "" -source 1.2 -target 1.1 -d out -cp src src/Jasmin.java
     @$(JDK)jar cfm jasmin.jar src/jasmin.mf -C out .
 
 src/jasmin/parser.java:
@@ -128,7 +128,7 @@ src/jasmin/sym.java: src/jasmin/parser.cup java_cup.jar
 java_cup.jar : $(CUP)
     @if not exist out_cup\nul mkdir out_cup
     @if exist java_cup.jar copy java_cup.jar out_cup >nul
-    @$(JDK)javac -source 1.2 -target 1.1 -d out_cup -cp src src/java_cup/Main.java
+    @$(JDK)javac -extdirs "" -source 1.2 -target 1.1 -d out_cup -cp src src/java_cup/Main.java
     @$(JDK)jar cfm java_cup.jar src/java_cup.mf -C out_cup .
 
 src/java_cup/parser.java:

@@ -11,7 +11,7 @@ import java.util.Enumeration;
 
 public class InnerClassesAttr
 {
-  static CP attr = new AsciiCP("InnerClasses");
+  static final CP attr = new AsciiCP("InnerClasses");
   private Vector list;
 
   public InnerClassesAttr()
