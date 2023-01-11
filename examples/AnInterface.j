@@ -25,7 +25,7 @@
 ;
 ; declare abstract method foo() - note that the method body is empty.
 ;
-.method abstract foo()V
+.method public abstract foo()V
 .end method
 
 
