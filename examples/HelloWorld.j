@@ -5,31 +5,29 @@
 ; -------------------------------------------------------------------------
 
 
-.class public NoJad.j
+.class public examples/HelloWorld
 .super java/lang/Object
 
 ;
 ; standard initializer
 .method public <init>()V
    aload_0
- 
    invokenonvirtual java/lang/Object/<init>()V
    return
 .end method
 
 .method public static main([Ljava/lang/String;)V
-   .limit stack 2
-   .limit locals 2
-   
-   bipush 2
-   astore 0
-   bipush 3
-   astore 1
+    .limit stack 2   ; up to two items can be pushed
 
-   aload 0
-   aload 1
-   astore 0
-   astore 1
+    ; push System.out onto the stack
+    getstatic java/lang/System/out Ljava/io/PrintStream;
 
-   return
+    ; push a string onto the stack
+    ldc "Hello World!"
+
+    ; call the PrintStream.println() method.
+    invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V
+
+    ; done
+    return
 .end method
